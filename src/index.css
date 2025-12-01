@@ -47,6 +47,8 @@ body {
   flex-direction: column;
   position: relative;
   background-color: var(--bg-color);
+  overflow: hidden;
+  /* Ensure no outer scroll */
 }
 
 /* Scrollable Content Area */
@@ -56,9 +58,13 @@ body {
   overflow-x: hidden;
   padding: 20px;
   padding-top: calc(20px + env(safe-area-inset-top));
+  /* Removed padding-bottom calculation as nav is now stacked */
   -webkit-overflow-scrolling: touch;
   /* Smooth scroll on iOS */
+  /* Smooth scroll on iOS */
   width: 100%;
+  padding-bottom: 100px;
+  /* Extra buffer for bottom nav */
 }
 
 button {
@@ -124,18 +130,22 @@ p {
 
 /* Bottom Navigation */
 .bottom-nav {
+  position: relative;
+  /* Changed from fixed to relative/static flex child */
   flex-shrink: 0;
-  /* Don't shrink */
-  width: 100%;
+  /* Prevent shrinking */
   height: calc(var(--nav-height) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   background: var(--card-bg);
   display: flex;
   justify-content: center;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
-  z-index: 100;
-  position: relative;
-  /* Ensure z-index works */
+  z-index: 2000;
+  /* High enough to be above content, but below modals/floating actions if needed */
+  transform: translateZ(0);
+  /* Force hardware acceleration/new layer */
+  min-height: 80px;
+  /* Ensure tall enough for touch targets */
 }
 
 .bottom-nav-content {

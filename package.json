@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node generate-version.js && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy:staging": "npm run build && npx firebase hosting:channel:deploy staging --expires 30d",
+    "deploy:prod": "npm run build && npx firebase deploy --only hosting"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

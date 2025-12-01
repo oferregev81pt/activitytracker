@@ -9,4 +9,13 @@ export default defineConfig({
       "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        entryFileNames: `assets/[name].[hash].js`,
+        chunkFileNames: `assets/[name].[hash].js`,
+        assetFileNames: `assets/[name].[hash].[ext]`
+      }
+    }
+  },
 })

@@ -143,6 +143,7 @@ function App() {
   const [goals, setGoals] = useState({ pee: 0, drink: 0, poo: 0 });
   const [bottleSize, setBottleSize] = useState(750);
   const [trendRange, setTrendRange] = useState('week'); // 'week' or 'month'
+  const [selectedTrendCategory, setSelectedTrendCategory] = useState('drink'); // 'drink', 'pee', 'poo', 'chore'
   const [newBadge, setNewBadge] = useState(null);
   const [healthInsight, setHealthInsight] = useState(null);
   const [isAnalyzingHealth, setIsAnalyzingHealth] = useState(false);
@@ -173,6 +174,7 @@ function App() {
   const [showChat, setShowChat] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [chatRecipient, setChatRecipient] = useState('all');
+  const messagesEndRef = useRef(null);
 
   // Load insight and weight on user change
   useEffect(() => {
@@ -271,6 +273,17 @@ function App() {
 
     updateUnread();
   }, [messages, user, showChat]);
+  // Auto-scroll to bottom of chat
+  useEffect(() => {
+    if (showChat) {
+      // Small timeout to ensure DOM is rendered
+      const timer = setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [messages, showChat, chatRecipient]);
+
 
   const generateGazette = async (lang = 'he') => {
     if (!groupCode) return;
@@ -1748,7 +1761,10 @@ function App() {
               {t('hey')}, {user.displayName.split(' ')[0]} 👋
               {calculateStreak(user.uid) > 0 && <span style={{ marginLeft: '10px', fontSize: '24px' }}>🔥 {calculateStreak(user.uid)}</span>}
             </h1>
-            <p style={{ marginTop: '5px' }}>{t('track_activities')}</p>
+            <p style={{ marginTop: '5px' }}>
+              {t('track_activities')}
+              <span style={{ fontSize: '10px', color: '#ccc', marginLeft: '8px', opacity: 0.7 }}>v{__APP_VERSION__}</span>
+            </p>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             {/* Install Button */}
@@ -2185,61 +2201,125 @@ function App() {
               </div>
 
               {/* Daily Progress Donut */}
-              <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 20px', marginBottom: '15px' }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '18px' }}>{t('daily_goals')}</h3>
-                  <p style={{ margin: '5px 0 0', color: '#666', fontSize: '14px' }}>{t('keep_it_up')}</p>
-                </div>
-                <div style={{ width: '80px', height: '80px', position: 'relative', minWidth: 0 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={(() => {
-                          const targetPee = Number(goals.pee) || 10;
-                          const targetPoo = Number(goals.poo) || 1;
-                          const targetDrink = Number(goals.drink) || 1500;
-
-                          const peeProgress = Math.min(myStats.pee / targetPee, 1);
-                          const pooProgress = Math.min(myStats.poo / targetPoo, 1);
-                          const drinkProgress = Math.min(myStats.drink / targetDrink, 1);
-
-                          const totalProgress = peeProgress + pooProgress + drinkProgress;
-                          const remaining = Math.max(0, 3 - totalProgress);
-
-                          return [
-                            { name: 'Pee', value: peeProgress },
-                            { name: 'Poo', value: pooProgress },
-                            { name: 'Drink', value: drinkProgress },
-                            { name: 'Remaining', value: remaining }
-                          ];
-                        })()}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={25}
-                        outerRadius={35}
-                        startAngle={90}
-                        endAngle={-270}
-                        dataKey="value"
-                      >
-                        <Cell key="cell-pee" fill={COLORS.pee} />
-                        <Cell key="cell-poo" fill={COLORS.poo} />
-                        <Cell key="cell-drink" fill={COLORS.drink} />
-                        <Cell key="cell-rem" fill="#f0f0f0" />
-                      </Pie>
-                      <Tooltip
-                        formatter={(value, name) => [name === 'Remaining' ? '' : `${Math.round(value * 100)}%`, name]}
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', fontSize: '12px' }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div style={{
-                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '12px', fontWeight: 'bold', color: '#1a1a2e',
-                    pointerEvents: 'none'
-                  }}>
-                    {Math.round(((Math.min(myStats.pee / (goals.pee || 1), 1) + Math.min(myStats.poo / (goals.poo || 1), 1) + Math.min(myStats.drink / (goals.drink || 1), 1)) / 3) * 100)}%
+              <div className="card" style={{ padding: '15px 20px', marginBottom: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <div>
+                    <h3 style={{ margin: 0 }}>{translations[language].daily_goals}</h3>
+                    <p style={{ margin: 0, fontSize: '12px', color: '#888' }}>{translations[language].keep_it_up}</p>
                   </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                  <div style={{ width: '80px', height: '80px', position: 'relative', minWidth: 0 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={(() => {
+                            const targetPee = Number(goals.pee) || 10;
+                            const targetPoo = Number(goals.poo) || 1;
+                            const targetDrink = Number(goals.drink) || 1500;
+
+                            const peeProgress = Math.min(myStats.pee / targetPee, 1);
+                            const pooProgress = Math.min(myStats.poo / targetPoo, 1);
+                            const drinkProgress = Math.min(myStats.drink / targetDrink, 1);
+
+                            const totalProgress = peeProgress + pooProgress + drinkProgress;
+                            const remaining = Math.max(0, 3 - totalProgress);
+
+                            return [
+                              { name: 'Pee', value: peeProgress },
+                              { name: 'Poo', value: pooProgress },
+                              { name: 'Drink', value: drinkProgress },
+                              { name: 'Remaining', value: remaining }
+                            ];
+                          })()}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={25}
+                          outerRadius={35}
+                          startAngle={90}
+                          endAngle={-270}
+                          dataKey="value"
+                        >
+                          <Cell key="cell-pee" fill={COLORS.pee} />
+                          <Cell key="cell-poo" fill={COLORS.poo} />
+                          <Cell key="cell-drink" fill={COLORS.drink} />
+                          <Cell key="cell-rem" fill="#f0f0f0" />
+                        </Pie>
+                        <Tooltip
+                          formatter={(value, name) => [name === 'Remaining' ? '' : `${Math.round(value * 100)}%`, name]}
+                          contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', fontSize: '12px' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div style={{
+                      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '12px', fontWeight: 'bold', color: '#1a1a2e',
+                      pointerEvents: 'none'
+                    }}>
+                      {Math.round(((Math.min(myStats.pee / (goals.pee || 1), 1) + Math.min(myStats.poo / (goals.poo || 1), 1) + Math.min(myStats.drink / (goals.drink || 1), 1)) / 3) * 100)}%
+                    </div>
+                  </div>
+                </div>
+
+                {/* Weekly Streak Row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', padding: '10px', background: '#f8f9fa', borderRadius: '15px' }}>
+                  {(() => {
+                    const days = [];
+                    for (let i = 6; i >= 0; i--) {
+                      const d = new Date();
+                      d.setDate(d.getDate() - i);
+                      const dateStr = getIsraelDateString(d);
+                      const dayName = d.toLocaleDateString('en-US', { weekday: 'narrow' });
+
+                      const dayActs = activities.filter(a => getIsraelDateString(a.timestamp) === dateStr);
+                      const stats = {
+                        pee: dayActs.filter(a => a.type === 'pee').length,
+                        poo: dayActs.filter(a => a.type === 'poo').length,
+                        drink: dayActs.filter(a => a.type === 'drink').reduce((sum, a) => sum + a.amount, 0)
+                      };
+
+                      const targetPee = Number(goals.pee) || 10;
+                      const targetPoo = Number(goals.poo) || 1;
+                      const targetDrink = Number(goals.drink) || 1500;
+
+                      const peePct = Math.min(stats.pee / targetPee, 1);
+                      const pooPct = Math.min(stats.poo / targetPoo, 1);
+                      const drinkPct = Math.min(stats.drink / targetDrink, 1);
+
+                      const totalPct = (peePct + pooPct + drinkPct) / 3;
+                      const isToday = i === 0;
+
+                      days.push(
+                        <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: isToday ? 'bold' : 'normal', color: isToday ? '#1a1a2e' : '#888' }}>{dayName}</span>
+                          <div style={{ position: 'relative', width: '30px', height: '30px' }}>
+                            <svg width="30" height="30" viewBox="0 0 36 36">
+                              <path
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                stroke="#eee"
+                                strokeWidth="4"
+                              />
+                              <path
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                stroke={totalPct >= 1 ? '#4caf50' : '#ffa726'}
+                                strokeWidth="4"
+                                strokeDasharray={`${totalPct * 100}, 100`}
+                                className="animate-fade-in"
+                              />
+                            </svg>
+                            {totalPct >= 1 && (
+                              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '12px' }}>✅</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return days;
+                  })()}
                 </div>
               </div>
 
@@ -2441,9 +2521,10 @@ function App() {
           )}
 
           {activeTab === 'trends' && (
-            <div className="card" style={{ padding: '20px 10px' }}>
+            <div className="card" style={{ padding: '20px 10px', minHeight: '80vh' }}>
+              {/* Header & Time Range */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 10px 20px 10px' }}>
-                <h3 style={{ margin: 0 }}>{t('trends')} 📊</h3>
+                <h3 style={{ margin: 0 }}>{t('leaderboard')} 🏆</h3>
                 <div style={{ background: '#f5f7fa', padding: '4px', borderRadius: '20px', display: 'flex' }}>
                   <button
                     onClick={() => setTrendRange('week')}
@@ -2451,7 +2532,8 @@ function App() {
                       padding: '5px 15px', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold',
                       background: trendRange === 'week' ? 'white' : 'transparent',
                       color: trendRange === 'week' ? '#1a1a2e' : '#888',
-                      boxShadow: trendRange === 'week' ? '0 2px 5px rgba(0,0,0,0.05)' : 'none'
+                      boxShadow: trendRange === 'week' ? '0 2px 5px rgba(0,0,0,0.05)' : 'none',
+                      border: 'none'
                     }}
                   >{t('week')}</button>
                   <button
@@ -2460,107 +2542,209 @@ function App() {
                       padding: '5px 15px', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold',
                       background: trendRange === 'month' ? 'white' : 'transparent',
                       color: trendRange === 'month' ? '#1a1a2e' : '#888',
-                      boxShadow: trendRange === 'month' ? '0 2px 5px rgba(0,0,0,0.05)' : 'none'
+                      boxShadow: trendRange === 'month' ? '0 2px 5px rgba(0,0,0,0.05)' : 'none',
+                      border: 'none'
                     }}
                   >{t('month')}</button>
                 </div>
               </div>
 
-              {/* Global Filters */}
-              <div style={{ padding: '0 10px 20px 10px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {/* Type Filter */}
-                <div>
-                  <p style={{ fontSize: '12px', color: '#888', marginBottom: '8px', fontWeight: '600' }}>Filter by Type:</p>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {['pee', 'drink', 'poo', 'chore'].map(type => (
-                      <button
-                        key={type}
-                        onClick={() => toggleActivityType(type)}
-                        style={{
-                          padding: '6px 12px', borderRadius: '15px', fontSize: '11px', fontWeight: 'bold',
-                          background: selectedActivityTypes.includes(type) ? COLORS[type] : '#f0f0f0',
-                          color: selectedActivityTypes.includes(type) ? 'white' : '#888',
-                          border: 'none', opacity: selectedActivityTypes.includes(type) ? 1 : 0.6,
-                          flex: 1
-                        }}
-                      >
-                        {ICONS[type]} {t(type) || type}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Member Filter */}
-                <div>
-                  <p style={{ fontSize: '12px', color: '#888', marginBottom: '8px', fontWeight: '600' }}>Filter by Member:</p>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {groupData?.members?.map((member, index) => (
-                      <button
-                        key={member.uid}
-                        onClick={() => toggleMember(member.uid)}
-                        style={{
-                          padding: '6px 12px', borderRadius: '15px', fontSize: '11px', fontWeight: 'bold',
-                          background: selectedMembers.includes(member.uid) ? `hsl(${index * 137.5 % 360}, 70%, 50%)` : '#f0f0f0',
-                          color: selectedMembers.includes(member.uid) ? 'white' : '#888',
-                          border: 'none', opacity: selectedMembers.includes(member.uid) ? 1 : 0.6
-                        }}
-                      >
-                        {member.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              {/* Category Selectors */}
+              <div style={{ display: 'flex', gap: '10px', padding: '0 10px 20px 10px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+                {['drink', 'pee', 'poo', 'chore'].map(type => (
+                  <button
+                    key={type}
+                    onClick={() => setSelectedTrendCategory(type)}
+                    style={{
+                      padding: '8px 16px', borderRadius: '20px', fontSize: '14px', fontWeight: 'bold',
+                      background: selectedTrendCategory === type ? COLORS[type] : '#f0f0f0',
+                      color: selectedTrendCategory === type ? 'white' : '#888',
+                      border: 'none',
+                      boxShadow: selectedTrendCategory === type ? '0 4px 10px rgba(0,0,0,0.2)' : 'none',
+                      transition: 'all 0.2s',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {ICONS[type]} {t(type)}
+                  </button>
+                ))}
               </div>
 
-              {/* Activity Type Chart */}
-              <h4 style={{ fontSize: '14px', color: '#666', paddingLeft: '10px', marginBottom: '10px' }}>{t('by_activity_type')}</h4>
-              <div style={{ height: '250px', width: '100%', fontSize: '10px', marginBottom: '30px', minWidth: 0 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trendData.typeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} dy={10} interval={trendRange === 'month' ? 6 : 0} />
-                    <YAxis yAxisId="left" axisLine={false} tickLine={false} />
-                    <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} />
-                    <Tooltip
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
-                    />
-                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                    {selectedActivityTypes.includes('pee') && <Line yAxisId="left" type="monotone" dataKey="pee" stroke={COLORS.pee} strokeWidth={3} dot={false} name="Pee (count)" />}
-                    {selectedActivityTypes.includes('drink') && <Line yAxisId="right" type="monotone" dataKey="drink" stroke={COLORS.drink} strokeWidth={3} dot={false} name="Drink (ml)" />}
-                    {selectedActivityTypes.includes('poo') && <Line yAxisId="left" type="monotone" dataKey="poo" stroke={COLORS.poo} strokeWidth={3} dot={false} name="Poop (count)" />}
-                    {selectedActivityTypes.includes('chore') && <Line yAxisId="left" type="monotone" dataKey="chore" stroke={COLORS.chore} strokeWidth={3} dot={false} name="Chores (pts)" />}
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+              {/* Podium Logic */}
+              {(() => {
+                // 1. Filter Data
+                const now = new Date();
+                const startDate = new Date();
+                if (trendRange === 'week') startDate.setDate(now.getDate() - 7);
+                else startDate.setMonth(now.getMonth() - 1);
 
-              {/* Member Activity Chart */}
-              <h4 style={{ fontSize: '14px', color: '#666', paddingLeft: '10px', marginBottom: '10px' }}>{t('by_family_member')}</h4>
-              <div style={{ height: '250px', width: '100%', fontSize: '10px', minWidth: 0 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trendData.memberData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} dy={10} interval={trendRange === 'month' ? 6 : 0} />
-                    <YAxis axisLine={false} tickLine={false} />
-                    <Tooltip
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
-                    />
-                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                    {groupData?.members?.map((member, index) => (
-                      selectedMembers.includes(member.uid) && (
-                        <Line
-                          key={member.uid}
-                          type="monotone"
-                          dataKey={member.name}
-                          stroke={`hsl(${index * 137.5 % 360}, 70%, 50%)`}
-                          strokeWidth={3}
-                          dot={false}
-                          name={member.name}
-                        />
-                      )
-                    ))}
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+                const relevantActs = activities.filter(a => new Date(a.timestamp) >= startDate);
+
+                // 2. Calculate Scores
+                const scores = {};
+                const choreBreakdowns = {};
+                groupData?.members?.forEach(m => {
+                  scores[m.uid] = 0;
+                  choreBreakdowns[m.uid] = {};
+                });
+
+                relevantActs.forEach(a => {
+                  if (a.type === selectedTrendCategory) {
+                    if (a.type === 'drink') scores[a.userId] += (a.amount || 0) / 1000; // Liters
+                    else if (a.type === 'chore') {
+                      const pts = (a.amount || 0);
+                      scores[a.userId] += pts;
+                      const cName = a.details?.name || 'Unknown';
+                      if (!choreBreakdowns[a.userId][cName]) choreBreakdowns[a.userId][cName] = 0;
+                      choreBreakdowns[a.userId][cName] += pts;
+                    }
+                    else scores[a.userId] += 1; // Count
+                  }
+                });
+
+                // 3. Sort
+                const sortedMembers = Object.entries(scores)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([uid, score]) => {
+                    const member = groupData?.members?.find(m => m.uid === uid);
+                    return { ...member, score, choreBreakdown: choreBreakdowns[uid] };
+                  });
+
+                const top3 = sortedMembers.slice(0, 3);
+                const rest = sortedMembers.slice(3);
+                const unit = selectedTrendCategory === 'drink' ? 'L' : selectedTrendCategory === 'chore' ? 'pts' : '';
+
+                // Helper for colors
+                const stringToColor = (str) => {
+                  let hash = 0;
+                  for (let i = 0; i < str.length; i++) {
+                    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                  }
+                  const hue = Math.abs(hash % 360);
+                  return `hsl(${hue}, 70%, 50%)`;
+                };
+
+                const renderPodiumItem = (member, rank, height, gradientColors) => {
+                  if (!member) return <div style={{ width: '30%' }} />;
+
+                  const isChore = selectedTrendCategory === 'chore';
+
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: rank === 1 ? '35%' : '30%', zIndex: rank === 1 ? 2 : 1 }}>
+                      <div style={{ marginBottom: '35px', fontWeight: 'bold', color: rank === 1 ? '#f1c40f' : rank === 2 ? '#7f8c8d' : '#d35400' }}>
+                        {member.name.split(' ')[0]}
+                      </div>
+
+                      <div style={{
+                        width: '100%', height, position: 'relative',
+                        boxShadow: `0 10px 20px ${rank === 1 ? 'rgba(241, 196, 15, 0.3)' : 'rgba(0,0,0,0.1)'}`
+                      }}>
+                        {/* Stacks */}
+                        <div style={{
+                          position: 'absolute', inset: 0, borderRadius: '15px 15px 0 0', overflow: 'hidden',
+                          display: 'flex', flexDirection: 'column-reverse', background: '#f0f0f0'
+                        }}>
+                          {isChore ? (
+                            Object.entries(member.choreBreakdown || {}).map(([cName, pts]) => (
+                              <div
+                                key={cName}
+                                title={`${cName}: ${pts} pts`}
+                                onClick={(e) => { e.stopPropagation(); alert(`${cName}: ${pts} pts`); }}
+                                style={{
+                                  height: `${(pts / (member.score || 1)) * 100}%`,
+                                  background: stringToColor(cName),
+                                  width: '100%',
+                                  cursor: 'pointer'
+                                }}
+                              />
+                            ))
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', background: `linear-gradient(to top, ${gradientColors[0]}, ${gradientColors[1]})` }} />
+                          )}
+                        </div>
+
+                        {/* Content Overlay */}
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '10px', pointerEvents: 'none' }}>
+                          <div style={{ fontSize: rank === 1 ? '32px' : '24px', marginBottom: '5px' }}>{rank === 1 ? '👑' : rank === 2 ? '🥈' : '🥉'}</div>
+                          <div style={{ fontWeight: '900', fontSize: rank === 1 ? '20px' : '16px', color: '#2c3e50', textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}>
+                            {Math.round(member.score * 10) / 10}<span style={{ fontSize: '10px' }}>{unit}</span>
+                          </div>
+                        </div>
+
+                        {/* Avatar */}
+                        <div style={{
+                          width: rank === 1 ? '50px' : '40px', height: rank === 1 ? '50px' : '40px',
+                          borderRadius: '50%', background: rank === 1 ? '#f1c40f' : rank === 2 ? '#bdc3c7' : '#d35400',
+                          color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontWeight: 'bold', fontSize: rank === 1 ? '20px' : '14px',
+                          position: 'absolute', top: rank === 1 ? '-25px' : '-20px', left: '50%', transform: 'translateX(-50%)',
+                          border: '3px solid white', zIndex: 10
+                        }}>
+                          {member.name[0]}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                };
+
+                return (
+                  <>
+                    {/* The Podium */}
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', height: '220px', marginBottom: '30px', gap: '10px' }}>
+                      {renderPodiumItem(top3[1], 2, '100px', ['#bdc3c7', '#ecf0f1'])}
+                      {renderPodiumItem(top3[0], 1, '140px', ['#f1c40f', '#f9e79f'])}
+                      {renderPodiumItem(top3[2], 3, '70px', ['#e67e22', '#f39c12'])}
+                    </div>
+
+                    {/* The Rest List */}
+                    <div style={{ background: 'white', borderRadius: '20px', padding: '15px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+                      <h4 style={{ margin: '0 0 15px 0', color: '#888', fontSize: '14px' }}>Full Rankings</h4>
+                      {sortedMembers.map((member, index) => (
+                        <div key={member.uid} style={{
+                          display: 'flex', alignItems: 'center', padding: '10px', marginBottom: '8px',
+                          background: index < 3 ? '#fff' : '#f9f9f9', borderRadius: '12px',
+                          border: index < 3 ? '1px solid #eee' : 'none'
+                        }}>
+                          <div style={{ width: '25px', fontWeight: 'bold', color: '#888' }}>#{index + 1}</div>
+                          <div style={{
+                            width: '32px', height: '32px', borderRadius: '50%', background: `hsl(${index * 137.5 % 360}, 70%, 50%)`,
+                            color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '10px', fontWeight: 'bold'
+                          }}>
+                            {member.name[0]}
+                          </div>
+                          <div style={{ flex: 1, fontWeight: '600' }}>{member.name}</div>
+                          <div style={{ fontWeight: 'bold', color: '#333' }}>
+                            {Math.round(member.score * 10) / 10} <span style={{ fontSize: '12px', color: '#888' }}>{unit}</span>
+                          </div>
+                          {/* Mini Bar */}
+                          <div style={{ width: '80px', height: '8px', background: '#eee', borderRadius: '4px', marginLeft: '10px', overflow: 'hidden', display: 'flex' }}>
+                            {selectedTrendCategory === 'chore' ? (
+                              Object.entries(member.choreBreakdown || {}).map(([cName, pts]) => (
+                                <div
+                                  key={cName}
+                                  title={`${cName}: ${pts} pts`}
+                                  onClick={(e) => { e.stopPropagation(); alert(`${cName}: ${pts} pts`); }}
+                                  style={{
+                                    width: `${(pts / (member.score || 1)) * 100}%`,
+                                    height: '100%',
+                                    background: stringToColor(cName),
+                                    cursor: 'pointer'
+                                  }}
+                                />
+                              ))
+                            ) : (
+                              <div style={{
+                                width: `${(member.score / (sortedMembers[0].score || 1)) * 100}%`,
+                                height: '100%', background: COLORS[selectedTrendCategory] || '#333', borderRadius: '3px'
+                              }} />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
 
@@ -3726,6 +3910,7 @@ function App() {
                       </div>
                     );
                   })}
+                  <div ref={messagesEndRef} />
                 </div>
 
                 <div style={{ padding: '10px', borderTop: '1px solid #eee', display: 'flex', gap: '8px', background: 'white' }}>

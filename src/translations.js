@@ -28,6 +28,8 @@ export const translations = {
         todays_champions: "Today's Champions",
         view_all: "View All",
         points: "pts",
+        daily_goals: "Daily Goals",
+        keep_it_up: "Keep it up!",
 
         // Health Tab
         recent_activity: "Recent Activity",
@@ -132,6 +134,8 @@ export const translations = {
         todays_champions: "אלופי היום",
         view_all: "הצג הכל",
         points: "נק׳",
+        daily_goals: "יעדים יומיים",
+        keep_it_up: "המשיכו כך!",
 
         // Health Tab
         recent_activity: "פעילות אחרונה",

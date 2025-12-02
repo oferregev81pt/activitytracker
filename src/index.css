@@ -130,22 +130,33 @@ p {
 
 /* Bottom Navigation */
 .bottom-nav {
-  position: relative;
-  /* Changed from fixed to relative/static flex child */
-  flex-shrink: 0;
-  /* Prevent shrinking */
-  height: calc(var(--nav-height) + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  max-width: 480px;
+  height: auto;
+  min-height: 80px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
   background: var(--card-bg);
   display: flex;
   justify-content: center;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
   z-index: 2000;
-  /* High enough to be above content, but below modals/floating actions if needed */
   transform: translateZ(0);
-  /* Force hardware acceleration/new layer */
-  min-height: 80px;
-  /* Ensure tall enough for touch targets */
+}
+
+/* PWA Standalone Mode Adjustments */
+@media all and (display-mode: standalone) {
+  .bottom-nav {
+    padding-bottom: max(50px, env(safe-area-inset-bottom));
+    min-height: 110px;
+  }
+
+  .main-content {
+    padding-bottom: 140px;
+  }
 }
 
 .bottom-nav-content {

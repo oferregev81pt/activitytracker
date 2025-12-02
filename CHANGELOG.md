@@ -10,7 +10,15 @@
 - **Daily Goals Chart**: Fixed percentage calculation to consistently use goal defaults.
 - **Reaction Hover**: Improved reaction button UI to show names on hover/click.
 
-## [1.1.1] - 2025-12-02
+## [1.3.0] - 2025-12-02
+### Added
+- **Data Encryption**: Implemented AES encryption for all new user data (sticky notes, food logs, activities) to enhance privacy.
+- **iOS Improvements**: Fixed modal scrolling issues on iOS devices.
+### Fixed
+- **Streak Calculation**: Corrected weekly streak logic to only count the current user's activities.
+- **Analytics**: Restored analytics functionality.
+
+## [1.2.1] - 2025-12-02
 ### Fixed
 - **Safari Login Issue**: Switched to `signInWithPopup` to resolve "missing initial state" errors on Safari and other browsers with strict privacy settings.
 - **Reaction Names**: Added tooltip and count display for who reacted to activities.

@@ -4,7 +4,7 @@ import { db, auth, googleProvider, ai } from './firebase'
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth'
 import {
   doc, setDoc, getDoc, updateDoc, arrayUnion, deleteDoc, getDocs, where,
-  collection, addDoc, onSnapshot, query, orderBy, limit
+  collection, addDoc, onSnapshot, query, orderBy, limit, deleteField
 } from 'firebase/firestore'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
 import { getGenerativeModel } from "firebase/ai";
@@ -163,6 +163,7 @@ function App() {
   const [stickyNotes, setStickyNotes] = useState([]);
   const [newNoteText, setNewNoteText] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
+  const [deletingNoteId, setDeletingNoteId] = useState(null);
 
   // Shopping List Edit State
   const [editingShoppingItem, setEditingShoppingItem] = useState(null);
@@ -546,11 +547,16 @@ function App() {
 
   const handleDeleteNote = async (noteId) => {
     if (!groupCode) return;
-    try {
-      await deleteDoc(doc(db, 'groups', groupCode, 'stickyNotes', noteId));
-    } catch (error) {
-      console.error("Failed to delete note:", error);
-    }
+    setDeletingNoteId(noteId);
+    setTimeout(async () => {
+      try {
+        await deleteDoc(doc(db, 'groups', groupCode, 'stickyNotes', noteId));
+        setDeletingNoteId(null);
+      } catch (error) {
+        console.error("Failed to delete note:", error);
+        setDeletingNoteId(null);
+      }
+    }, 600); // Wait for animation
   };
 
   const handleSendMessage = async () => {
@@ -602,6 +608,10 @@ function App() {
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [leaderboardRange, setLeaderboardRange] = useState('day'); // 'day', 'week', 'month', 'all'
   const [showDrinkSelection, setShowDrinkSelection] = useState(false);
+  const [showFoodSelection, setShowFoodSelection] = useState(false);
+  const [showAllFood, setShowAllFood] = useState(false);
+  const [showAllChores, setShowAllChores] = useState(false);
+  const [expandedChoreUser, setExpandedChoreUser] = useState(null);
 
   // Food Tracker State
   const [foodInput, setFoodInput] = useState('');
@@ -721,15 +731,7 @@ function App() {
     }
   };
 
-  const handleDeleteActivity = async (activityId) => {
-    if (!confirm("Are you sure you want to delete this activity?")) return;
-    try {
-      await deleteDoc(doc(db, 'groups', groupCode, 'activities', activityId));
-    } catch (error) {
-      console.error("Error deleting activity:", error);
-      alert("Failed to delete activity.");
-    }
-  };
+
 
   // Detect PWA install capability
   useEffect(() => {
@@ -1068,7 +1070,37 @@ function App() {
       console.error("Error undoing activity:", error);
       alert("Failed to undo.");
     }
-  }
+  };
+
+  const handleReaction = async (activityId, reactionType) => {
+    if (!groupCode || !user) return;
+    try {
+      const activityRef = doc(db, 'groups', groupCode, 'activities', activityId);
+      if (reactionType === null) {
+        await updateDoc(activityRef, {
+          [`reactions.${user.uid}`]: deleteField()
+        });
+      } else {
+        await updateDoc(activityRef, {
+          [`reactions.${user.uid}`]: reactionType
+        });
+      }
+    } catch (error) {
+      console.error("Error adding reaction:", error);
+    }
+  };
+
+  const handleDeleteActivity = async (activityId) => {
+    if (!groupCode || !activityId) return;
+    if (!confirm(t('delete_confirm'))) return;
+
+    try {
+      await deleteDoc(doc(db, 'groups', groupCode, 'activities', activityId));
+    } catch (error) {
+      console.error("Error deleting activity:", error);
+      alert("Failed to delete activity.");
+    }
+  };
 
 
   const handleAnalyzeFood = async (langInput, imageOverride = null) => {
@@ -1089,27 +1121,29 @@ function App() {
 
       promptParts.push({
         text: `Analyze the following food input: "${foodInput}".
-        Return a JSON object with the following structure:
-      {
-        "items": [
-          {
-            "name": "Food Name",
-            "calories": 100,
-            "protein": 5,
-            "fat": 2,
-            "carbs": 10,
-            "emoji": "🍎"
-          }
-        ],
-          "totalCalories": 100,
-            "totalProtein": 5,
-              "healthScore": 8, // 1-10
-                "feedback": "Brief feedback sentence"
-      }
-      IMPORTANT: Output valid JSON only.
-      Output Language for 'feedback' and 'name': ${lang === 'he' ? 'Hebrew' : 'English'}
-      IMPORTANT: Use gender-neutral language (in Hebrew use plural or avoid gendered verbs).
-      `});
+      Return a JSON object with the following structure:
+    {
+      "items": [
+        {
+          "name": "Food Name",
+          "calories": 100,
+          "protein": 5,
+          "fat": 2,
+          "carbs": 10,
+          "emoji": "🍎"
+        }
+      ],
+        "totalCalories": 100,
+          "totalProtein": 5,
+            "healthScore": 8, // 1-10
+            "isHealthy": true, // true for nutritious food, false for sweets/junk/processed
+            "classificationReason": "Brief reason for classification",
+              "feedback": "Brief feedback sentence"
+    }
+    IMPORTANT: Output valid JSON only.
+    Output Language for 'feedback', 'name', and 'classificationReason': ${lang === 'he' ? 'Hebrew' : 'English'}
+    IMPORTANT: Use gender-neutral language (in Hebrew use plural or avoid gendered verbs).
+    `});
 
       const result = await model.generateContent({
         contents: [{ role: 'user', parts: promptParts }]
@@ -1122,6 +1156,7 @@ function App() {
       const data = JSON.parse(jsonStr);
 
       // Set data for confirmation instead of adding immediately
+      setShowFoodSelection(false);
       setAnalyzedFoodData({
         data,
         input: foodInput,
@@ -1140,10 +1175,17 @@ function App() {
     if (!analyzedFoodData) return;
 
     try {
+      const isHealthy = analyzedFoodData.data.isHealthy;
+      const points = isHealthy ? 1 : -1;
+
       await addDoc(collection(db, 'groups', groupCode, 'activities'), {
         type: 'food',
-        amount: analyzedFoodData.data.totalCalories,
-        details: analyzedFoodData.data,
+        amount: points,
+        details: {
+          ...analyzedFoodData.data,
+          calories: analyzedFoodData.data.totalCalories,
+          isHealthy: isHealthy
+        },
         input: analyzedFoodData.input,
         image: analyzedFoodData.image, // Optional: save image if needed, or just keep it for the session
         userId: user.uid,
@@ -2008,12 +2050,79 @@ function App() {
                 </div>
               )}
 
+              {/* Food Selection Modal */}
+              {showFoodSelection && (
+                <div style={{
+                  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                  background: 'rgba(0,0,0,0.5)', zIndex: 3000,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '20px'
+                }}>
+                  <div className="card" style={{ width: '100%', maxWidth: '350px', textAlign: 'center' }}>
+                    <h3>{t('what_did_you_eat')}</h3>
+
+                    <textarea
+                      value={foodInput}
+                      onChange={(e) => setFoodInput(e.target.value)}
+                      placeholder="e.g., Apple, Pizza, Salad..."
+                      style={{
+                        width: '100%', height: '80px', padding: '10px', borderRadius: '10px',
+                        border: '1px solid #ddd', marginBottom: '20px', fontSize: '16px', resize: 'none'
+                      }}
+                    />
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                      <button
+                        onClick={() => {
+                          handleTrack('food', 1, { isHealthy: true, name: foodInput || 'Healthy Food' });
+                          setShowFoodSelection(false);
+                          setFoodInput('');
+                        }}
+                        style={{
+                          background: '#e8f5e9', padding: '20px', borderRadius: '15px',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px'
+                        }}
+                      >
+                        <span style={{ fontSize: '32px' }}>🥗</span>
+                        <span style={{ fontWeight: 'bold', color: '#2e7d32' }}>Healthy</span>
+                        <span style={{ fontSize: '12px', color: '#666' }}>+1 Point</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleTrack('food', -1, { isHealthy: false, name: foodInput || 'Sweet/Junk' });
+                          setShowFoodSelection(false);
+                          setFoodInput('');
+                        }}
+                        style={{
+                          background: '#ffebee', padding: '20px', borderRadius: '15px',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px'
+                        }}
+                      >
+                        <span style={{ fontSize: '32px' }}>🍬</span>
+                        <span style={{ fontWeight: 'bold', color: '#c62828' }}>Sweet/Junk</span>
+                        <span style={{ fontSize: '12px', color: '#666' }}>-1 Point</span>
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setShowFoodSelection(false)}
+                      style={{ marginTop: '20px', padding: '10px', background: 'transparent', border: 'none', color: '#888' }}
+                    >
+                      {t('cancel')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-                {['pee', 'drink', 'poo'].map((type) => (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+                {['pee', 'drink', 'poo', 'food'].map((type) => (
                   <div key={type} style={{ position: 'relative' }}>
                     <button
-                      onClick={() => type === 'drink' ? setShowDrinkSelection(true) : handleTrack(type)}
+                      onClick={() => {
+                        if (type === 'drink') setShowDrinkSelection(true);
+                        else if (type === 'food') setActiveTab('food');
+                        else handleTrack(type);
+                      }}
                       style={{
                         background: `linear-gradient(135deg, ${COLORS[type]}, ${COLORS[type]}dd)`,
                         borderRadius: '24px',
@@ -2159,44 +2268,53 @@ function App() {
                       The fridge is empty! Add a note.
                     </p>
                   )}
-                  {stickyNotes.map(note => (
-                    <div key={note.id} style={{
-                      background: note.color || '#fff9c4',
-                      padding: '25px 15px 15px 15px', // Top padding for magnet
-                      borderRadius: '2px',
-                      boxShadow: '0 4px 8px rgba(0,0,0,0.15)', // Lifted shadow
-                      transform: `rotate(${Math.random() * 6 - 3}deg)`, // More rotation
-                      position: 'relative',
-                      minHeight: '110px',
-                      display: 'flex', flexDirection: 'column'
-                    }}>
-                      {/* Magnet */}
-                      <div style={{
-                        position: 'absolute', top: '-8px', left: '50%', transform: 'translateX(-50%)',
-                        width: '20px', height: '20px', borderRadius: '50%',
-                        background: 'radial-gradient(circle at 30% 30%, #ff5252, #b71c1c)',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.4)',
-                        zIndex: 2
-                      }}></div>
-
-                      <div style={{
-                        fontFamily: 'Indie Flower, cursive, sans-serif',
-                        fontSize: '14px', color: '#333', flex: 1, whiteSpace: 'pre-wrap', lineHeight: '1.3'
+                  {stickyNotes.map(note => {
+                    const creator = groupData?.members?.find(m => m.uid === note.addedBy);
+                    return (
+                      <div key={note.id} className={deletingNoteId === note.id ? 'animate-trash' : ''} style={{
+                        background: note.color || '#fff9c4',
+                        padding: '25px 15px 15px 15px', // Top padding for magnet
+                        borderRadius: '2px',
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.15)', // Lifted shadow
+                        transform: `rotate(${Math.random() * 6 - 3}deg)`, // More rotation
+                        position: 'relative',
+                        minHeight: '110px',
+                        display: 'flex', flexDirection: 'column'
                       }}>
-                        {note.text}
+                        {/* Magnet */}
+                        <div style={{
+                          position: 'absolute', top: '-8px', left: '50%', transform: 'translateX(-50%)',
+                          width: '20px', height: '20px', borderRadius: '50%',
+                          background: 'radial-gradient(circle at 30% 30%, #ff5252, #b71c1c)',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.4)',
+                          zIndex: 2
+                        }}></div>
+
+                        <div style={{
+                          fontFamily: 'Indie Flower, cursive, sans-serif',
+                          fontSize: '14px', color: '#333', flex: 1, whiteSpace: 'pre-wrap', lineHeight: '1.3'
+                        }}>
+                          {note.text}
+                        </div>
+
+                        {/* Creator Info */}
+                        <div style={{ fontSize: '10px', color: '#666', marginTop: '5px', fontStyle: 'italic' }}>
+                          - {creator ? creator.name : 'Unknown'}
+                        </div>
+
+                        <button
+                          onClick={() => handleDeleteNote(note.id)}
+                          style={{
+                            position: 'absolute', bottom: '5px', right: '5px',
+                            background: 'none', border: 'none', fontSize: '10px',
+                            cursor: 'pointer', opacity: 0.4, color: '#000'
+                          }}
+                        >
+                          🗑️
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handleDeleteNote(note.id)}
-                        style={{
-                          position: 'absolute', bottom: '5px', right: '5px',
-                          background: 'none', border: 'none', fontSize: '10px',
-                          cursor: 'pointer', opacity: 0.4, color: '#000'
-                        }}
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -2349,47 +2467,52 @@ function App() {
               <div className="card" onClick={() => setActiveTab('chores')} style={{ cursor: 'pointer', marginBottom: '15px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <h3 style={{ margin: 0, fontSize: '16px' }}>Chores 🧹</h3>
-                  <span style={{ fontSize: '12px', color: '#888' }}>View Details &gt;</span>
+                  <div style={{ display: 'flex', background: '#f0f0f0', borderRadius: '15px', padding: '2px' }} onClick={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => setShowAllChores(false)}
+                      style={{
+                        background: !showAllChores ? 'white' : 'transparent',
+                        color: !showAllChores ? '#333' : '#888',
+                        border: 'none', borderRadius: '12px', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold',
+                        boxShadow: !showAllChores ? '0 2px 5px rgba(0,0,0,0.1)' : 'none'
+                      }}
+                    >
+                      Me
+                    </button>
+                    <button
+                      onClick={() => setShowAllChores(true)}
+                      style={{
+                        background: showAllChores ? 'white' : 'transparent',
+                        color: showAllChores ? '#333' : '#888',
+                        border: 'none', borderRadius: '12px', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold',
+                        boxShadow: showAllChores ? '0 2px 5px rgba(0,0,0,0.1)' : 'none'
+                      }}
+                    >
+                      All
+                    </button>
+                  </div>
                 </div>
 
-                {/* My Points */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid #eee' }}>
-                  <div style={{
-                    width: '50px', height: '50px', borderRadius: '12px',
-                    background: `${COLORS.chore}20`, display: 'flex',
-                    alignItems: 'center', justifyContent: 'center', fontSize: '24px'
-                  }}>
-                    {ICONS.chore}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '14px', color: '#666' }}>Your Points Today</div>
-                    <div style={{ fontSize: '24px', fontWeight: '800', color: '#1a1a2e' }}>
-                      {myStats.chore || 0}
+                {/* My Points (Only show for Me) */}
+                {!showAllChores && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid #eee' }}>
+                    <div style={{
+                      width: '50px', height: '50px', borderRadius: '12px',
+                      background: `${COLORS.chore}20`, display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', fontSize: '24px'
+                    }}>
+                      {ICONS.chore}
                     </div>
-                  </div>
-                </div>
-
-                {/* What I Did Today */}
-                {activities.filter(act => act.type === 'chore' && act.userId === user?.uid && getIsraelDateString(act.timestamp) === getIsraelDateString()).length > 0 && (
-                  <div style={{ marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid #eee' }}>
-                    <p style={{ fontSize: '12px', color: '#888', marginBottom: '8px', fontWeight: '600' }}>You Completed:</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                      {activities
-                        .filter(act => act.type === 'chore' && act.userId === user?.uid && getIsraelDateString(act.timestamp) === getIsraelDateString())
-                        .map(act => {
-                          const choreInfo = chores.find(c => c.points === act.amount);
-                          return (
-                            <span key={act.id} style={{ fontSize: '11px', background: `${COLORS.chore}20`, color: COLORS.chore, padding: '3px 8px', borderRadius: '10px', fontWeight: '600' }}>
-                              {act.details?.name || choreInfo?.name || `${act.amount} pts`}
-                            </span>
-                          );
-                        })
-                      }
+                    <div>
+                      <div style={{ fontSize: '14px', color: '#666' }}>Your Points Today</div>
+                      <div style={{ fontSize: '24px', fontWeight: '800', color: '#1a1a2e' }}>
+                        {myStats.chore || 0}
+                      </div>
                     </div>
                   </div>
                 )}
 
-                {/* Family Leaderboard */}
+                {/* Family Leaderboard (Always Visible) */}
                 <div>
                   <p style={{ fontSize: '12px', color: '#888', marginBottom: '8px', fontWeight: '600' }}>Family Chore Scores:</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -2398,17 +2521,77 @@ function App() {
                       return { ...member, choreScore: scores.chore };
                     })
                       .sort((a, b) => b.choreScore - a.choreScore)
-                      .map((member, index) => (
-                        <div key={member.uid} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ color: '#999', width: '15px' }}>#{index + 1}</span>
-                            <span style={{ fontWeight: member.uid === user?.uid ? '700' : '400' }}>
-                              {member.name} {member.uid === user?.uid && '(You)'}
-                            </span>
+                      .map((member, index) => {
+                        const isExpanded = expandedChoreUser === member.uid;
+                        const memberChores = activities.filter(act => act.type === 'chore' && act.userId === member.uid && getIsraelDateString(act.timestamp) === getIsraelDateString());
+
+                        return (
+                          <div key={member.uid} style={{ background: isExpanded ? '#f9f9f9' : 'transparent', borderRadius: '12px', padding: isExpanded ? '10px' : '0' }}>
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedChoreUser(isExpanded ? null : member.uid);
+                              }}
+                              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', padding: '5px 0', cursor: 'pointer' }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ color: '#999', width: '15px' }}>#{index + 1}</span>
+                                <span style={{ fontWeight: member.uid === user?.uid ? '700' : '400' }}>
+                                  {member.name} {member.uid === user?.uid && '(You)'}
+                                </span>
+                                {memberChores.length > 0 && <span style={{ fontSize: '10px', color: '#888' }}>({memberChores.length})</span>}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span style={{ fontWeight: '600', color: COLORS.chore }}>{member.choreScore} pts</span>
+                                <span style={{ fontSize: '10px', color: '#ccc' }}>{isExpanded ? '▲' : '▼'}</span>
+                              </div>
+                            </div>
+
+                            {isExpanded && (
+                              <div style={{ marginTop: '5px', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {memberChores.length > 0 ? (
+                                  memberChores.map(act => {
+                                    const choreInfo = chores.find(c => c.points === act.amount);
+                                    return (
+                                      <div key={act.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '6px 10px', borderRadius: '8px', border: '1px solid #eee' }}>
+                                        <span style={{ fontSize: '12px', color: '#333' }}>
+                                          {act.details?.name || choreInfo?.name || `${act.amount} pts`}
+                                        </span>
+                                        <div style={{ display: 'flex', gap: '4px' }} onClick={e => e.stopPropagation()}>
+                                          {['👍', '❤️', '👎'].map(emoji => {
+                                            const hasReacted = act.reactions?.[user.uid] === emoji;
+                                            const count = Object.values(act.reactions || {}).filter(r => r === emoji).length;
+                                            return (
+                                              <button
+                                                key={emoji}
+                                                onClick={(e) => {
+                                                  e.preventDefault();
+                                                  e.stopPropagation();
+                                                  handleReaction(act.id, hasReacted ? null : emoji);
+                                                }}
+                                                style={{
+                                                  background: hasReacted ? '#e3f2fd' : 'transparent',
+                                                  border: 'none', padding: '2px', fontSize: '12px', cursor: 'pointer',
+                                                  opacity: hasReacted ? 1 : 0.4,
+                                                  minWidth: '20px'
+                                                }}
+                                              >
+                                                {emoji} {count > 0 && <span style={{ fontSize: '9px' }}>{count}</span>}
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                ) : (
+                                  <div style={{ fontSize: '11px', color: '#999', fontStyle: 'italic' }}>No chores today</div>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <span style={{ fontWeight: '600', color: COLORS.chore }}>{member.choreScore} pts</span>
-                        </div>
-                      ))
+                        );
+                      })
                     }
                   </div>
                 </div>
@@ -2418,60 +2601,114 @@ function App() {
               <div className="card" onClick={() => setActiveTab('food')} style={{ cursor: 'pointer', marginBottom: '15px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <h3 style={{ margin: 0, fontSize: '16px' }}>Food 🍎</h3>
-                  <span style={{ fontSize: '12px', color: '#888' }}>View Details &gt;</span>
-                </div>
-
-                {/* Progress Bars */}
-                <div style={{ marginBottom: '15px' }}>
-                  <div style={{ marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-                      <span>Calories</span>
-                      <span>{myStats.calories} / {dailyCaloriesTarget}</span>
-                    </div>
-                    <div style={{ height: '8px', background: '#eee', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{
-                        height: '100%',
-                        width: `${Math.min((myStats.calories / dailyCaloriesTarget) * 100, 100)}%`,
-                        background: '#ff7043', borderRadius: '4px'
-                      }} />
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-                      <span>Protein</span>
-                      <span>{myStats.protein}g / {dailyProteinTarget}g</span>
-                    </div>
-                    <div style={{ height: '8px', background: '#eee', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{
-                        height: '100%',
-                        width: `${Math.min((myStats.protein / dailyProteinTarget) * 100, 100)}%`,
-                        background: '#42a5f5', borderRadius: '4px'
-                      }} />
-                    </div>
+                  <div style={{ display: 'flex', background: '#f0f0f0', borderRadius: '15px', padding: '2px' }} onClick={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => setShowAllFood(false)}
+                      style={{
+                        background: !showAllFood ? 'white' : 'transparent',
+                        color: !showAllFood ? '#333' : '#888',
+                        border: 'none', borderRadius: '12px', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold',
+                        boxShadow: !showAllFood ? '0 2px 5px rgba(0,0,0,0.1)' : 'none'
+                      }}
+                    >
+                      Me
+                    </button>
+                    <button
+                      onClick={() => setShowAllFood(true)}
+                      style={{
+                        background: showAllFood ? 'white' : 'transparent',
+                        color: showAllFood ? '#333' : '#888',
+                        border: 'none', borderRadius: '12px', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold',
+                        boxShadow: showAllFood ? '0 2px 5px rgba(0,0,0,0.1)' : 'none'
+                      }}
+                    >
+                      All
+                    </button>
                   </div>
                 </div>
 
-                {myStats.calories > 0 || myStats.protein > 0 ? (
-                  <div>
-                    <div style={{ borderTop: '1px solid #eee', paddingTop: '10px' }}>
-                      <p style={{ fontSize: '12px', color: '#888', marginBottom: '5px', fontWeight: '600' }}>Eaten Today:</p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                        {activities
-                          .filter(act => act.type === 'food' && act.userId === user?.uid && getIsraelDateString(act.timestamp) === getIsraelDateString())
-                          .map(act => (
-                            <span key={act.id} style={{ fontSize: '11px', background: '#f0f0f0', padding: '2px 8px', borderRadius: '10px', color: '#555' }}>
-                              {act.input || (act.details?.items?.map(i => i.name).join(', ')) || 'Food'}
-                            </span>
-                          ))
-                        }
+                {/* Progress Bars (Only show for Me) */}
+                {!showAllFood && (
+                  <div style={{ marginBottom: '15px' }}>
+                    <div style={{ marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                        <span>Calories</span>
+                        <span>{myStats.calories} / {dailyCaloriesTarget}</span>
+                      </div>
+                      <div style={{ height: '8px', background: '#eee', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${Math.min((myStats.calories / dailyCaloriesTarget) * 100, 100)}%`,
+                          background: '#ff7043', borderRadius: '4px'
+                        }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                        <span>Protein</span>
+                        <span>{myStats.protein}g / {dailyProteinTarget}g</span>
+                      </div>
+                      <div style={{ height: '8px', background: '#eee', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${Math.min((myStats.protein / dailyProteinTarget) * 100, 100)}%`,
+                          background: '#42a5f5', borderRadius: '4px'
+                        }} />
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <div style={{ fontSize: '14px', color: '#666', fontStyle: 'italic' }}>
-                    Tap to log your meals for today.
-                  </div>
                 )}
+
+                {/* Eaten Today List */}
+                <div>
+                  <div style={{ borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                    <p style={{ fontSize: '12px', color: '#888', marginBottom: '5px', fontWeight: '600' }}>
+                      {showAllFood ? 'Everyone Eaten Today:' : 'Eaten Today:'}
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {activities
+                        .filter(act => act.type === 'food' && (showAllFood ? true : act.userId === user?.uid) && getIsraelDateString(act.timestamp) === getIsraelDateString())
+                        .map(act => {
+                          const member = groupData?.members?.find(m => m.uid === act.userId);
+                          return (
+                            <div key={act.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f9f9f9', padding: '8px 12px', borderRadius: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {showAllFood && member?.photoURL && <img src={member.photoURL} style={{ width: '20px', height: '20px', borderRadius: '50%' }} />}
+                                <span style={{ fontSize: '13px', color: '#333', fontWeight: '500' }}>
+                                  {act.input || (act.details?.items?.map(i => i.name).join(', ')) || 'Food'}
+                                </span>
+                              </div>
+                              <div style={{ display: 'flex', gap: '4px' }} onClick={e => e.stopPropagation()}>
+                                {['👍', '❤️', '👎'].map(emoji => {
+                                  const hasReacted = act.reactions?.[user.uid] === emoji;
+                                  const count = Object.values(act.reactions || {}).filter(r => r === emoji).length;
+                                  return (
+                                    <button
+                                      key={emoji}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        handleReaction(act.id, hasReacted ? null : emoji);
+                                      }}
+                                      style={{
+                                        background: hasReacted ? '#e3f2fd' : 'transparent',
+                                        border: 'none', padding: '4px', fontSize: '14px', cursor: 'pointer',
+                                        opacity: hasReacted ? 1 : 0.4,
+                                        minWidth: '24px'
+                                      }}
+                                    >
+                                      {emoji} {count > 0 && <span style={{ fontSize: '10px' }}>{count}</span>}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })
+                      }
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Mini Leaderboard Widget */}
@@ -3034,46 +3271,90 @@ function App() {
 
 
 
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  ref={fileInputRef}
-                  style={{ display: 'none' }}
-                  onChange={handleImageSelect}
-                />
-                <button
-                  onClick={() => fileInputRef.current.click()}
-                  style={{
-                    background: foodImage ? '#4caf50' : '#eee',
-                    color: foodImage ? 'white' : '#666',
-                    border: 'none', borderRadius: '12px', width: '50px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px'
-                  }}
-                >
-                  {foodImage ? '✅' : '📷'}
-                </button>
-                <input
-                  type="text"
-                  placeholder={t('describe_meal')}
-                  value={foodInput}
-                  onChange={(e) => setFoodInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAnalyzeFood()}
-                  disabled={isAnalyzing}
-                  style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #ddd', fontSize: '16px' }}
-                />
-                <button
-                  onClick={() => handleAnalyzeFood()}
-                  disabled={isAnalyzing}
-                  style={{
-                    background: isAnalyzing ? '#ccc' : COLORS.food,
-                    color: 'white', border: 'none', borderRadius: '12px', padding: '0 20px', fontWeight: 'bold',
-                    cursor: isAnalyzing ? 'not-allowed' : 'pointer'
-                  }}
-                >
-                  {isAnalyzing ? t('analyzing') : t('add')}
-                </button>
-              </div>
+              {/* Add Meal Button */}
+              <button
+                onClick={() => setShowFoodSelection(true)}
+                style={{
+                  width: '100%', padding: '20px', borderRadius: '20px',
+                  background: 'linear-gradient(135deg, #43a047 0%, #66bb6a 100%)',
+                  color: 'white', border: 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                  boxShadow: '0 10px 20px rgba(67, 160, 71, 0.3)',
+                  marginBottom: '20px', cursor: 'pointer'
+                }}
+              >
+                <span style={{ fontSize: '24px', fontWeight: 'bold' }}>+</span>
+                <span style={{ fontSize: '18px', fontWeight: 'bold' }}>{t('add_meal')}</span>
+              </button>
+
+              {/* Add Meal Modal */}
+              {showFoodSelection && (
+                <div style={{
+                  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                  background: 'rgba(0,0,0,0.6)', zIndex: 3000,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '20px', backdropFilter: 'blur(8px)'
+                }} onClick={() => setShowFoodSelection(false)}>
+                  <div className="card" style={{ width: '100%', maxWidth: '500px', textAlign: 'center', padding: '30px' }} onClick={e => e.stopPropagation()}>
+                    <h3 style={{ marginBottom: '25px', fontSize: '22px' }}>{t('what_did_you_eat')}</h3>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '25px' }}>
+                      <textarea
+                        value={foodInput}
+                        onChange={(e) => setFoodInput(e.target.value)}
+                        placeholder={t('describe_meal')}
+                        style={{
+                          width: '100%', height: '120px', padding: '15px', borderRadius: '15px',
+                          border: '2px solid #eee', fontSize: '18px', resize: 'none',
+                          background: '#f9f9f9', fontFamily: 'inherit'
+                        }}
+                      />
+
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          ref={fileInputRef}
+                          style={{ display: 'none' }}
+                          onChange={handleImageSelect}
+                        />
+                        <button
+                          onClick={() => fileInputRef.current.click()}
+                          style={{
+                            background: foodImage ? '#e8f5e9' : '#f5f5f5',
+                            color: foodImage ? '#2e7d32' : '#666',
+                            border: foodImage ? '2px solid #4caf50' : '2px dashed #ccc',
+                            borderRadius: '15px', padding: '15px 30px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                            fontSize: '16px', fontWeight: '600', width: '100%', cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          <span style={{ fontSize: '24px' }}>{foodImage ? '✅' : '📷'}</span>
+                          <span>{foodImage ? t('image_attached') : t('add_photo')}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        handleAnalyzeFood();
+                      }}
+                      disabled={isAnalyzing || (!foodInput && !foodImage)}
+                      style={{
+                        width: '100%', padding: '18px', borderRadius: '18px',
+                        background: (isAnalyzing || (!foodInput && !foodImage)) ? '#e0e0e0' : 'linear-gradient(135deg, #43a047 0%, #66bb6a 100%)',
+                        color: (isAnalyzing || (!foodInput && !foodImage)) ? '#999' : 'white',
+                        border: 'none', fontWeight: 'bold', fontSize: '18px',
+                        cursor: (isAnalyzing || (!foodInput && !foodImage)) ? 'not-allowed' : 'pointer',
+                        boxShadow: (isAnalyzing || (!foodInput && !foodImage)) ? 'none' : '0 10px 20px rgba(67, 160, 71, 0.3)'
+                      }}
+                    >
+                      {isAnalyzing ? t('analyzing') : t('analyze_food')}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Food Analysis Confirmation Modal */}
               {analyzedFoodData && (
@@ -3086,7 +3367,7 @@ function App() {
                     background: 'white', padding: '25px', borderRadius: '20px', width: '90%', maxWidth: '350px',
                     maxHeight: '80vh', overflowY: 'auto'
                   }} onClick={e => e.stopPropagation()}>
-                    <h3 style={{ marginTop: 0 }}>Confirm Meal 🍽️</h3>
+                    <h3 style={{ marginTop: 0 }}>{t('confirm_meal')}</h3>
 
                     {analyzedFoodData.image && (
                       <img src={analyzedFoodData.image} alt="Meal" style={{ width: '100%', borderRadius: '12px', marginBottom: '15px', maxHeight: '200px', objectFit: 'cover' }} />
@@ -3119,18 +3400,41 @@ function App() {
                       </div>
                     )}
 
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                      <button
+                        onClick={() => setAnalyzedFoodData({ ...analyzedFoodData, data: { ...analyzedFoodData.data, isHealthy: true } })}
+                        style={{
+                          flex: 1, padding: '10px', borderRadius: '10px', border: '2px solid #4caf50',
+                          background: analyzedFoodData.data.isHealthy ? '#e8f5e9' : 'white',
+                          color: analyzedFoodData.data.isHealthy ? '#2e7d32' : '#666', fontWeight: 'bold', cursor: 'pointer'
+                        }}
+                      >
+                        {t('healthy_plus_one')}
+                      </button>
+                      <button
+                        onClick={() => setAnalyzedFoodData({ ...analyzedFoodData, data: { ...analyzedFoodData.data, isHealthy: false } })}
+                        style={{
+                          flex: 1, padding: '10px', borderRadius: '10px', border: '2px solid #ef5350',
+                          background: !analyzedFoodData.data.isHealthy ? '#ffebee' : 'white',
+                          color: !analyzedFoodData.data.isHealthy ? '#c62828' : '#666', fontWeight: 'bold', cursor: 'pointer'
+                        }}
+                      >
+                        {t('junk_minus_one')}
+                      </button>
+                    </div>
+
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <button
                         onClick={() => setAnalyzedFoodData(null)}
-                        style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: '#eee', fontWeight: 'bold' }}
+                        style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: '#eee', fontWeight: 'bold', cursor: 'pointer' }}
                       >
-                        Cancel
+                        {t('cancel')}
                       </button>
                       <button
                         onClick={handleConfirmFood}
-                        style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: COLORS.food, color: 'white', fontWeight: 'bold' }}
+                        style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: COLORS.food, color: 'white', fontWeight: 'bold', cursor: 'pointer' }}
                       >
-                        Add Meal
+                        {t('add_meal')}
                       </button>
                     </div>
                   </div>
@@ -3307,12 +3611,14 @@ function App() {
                           </div>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleDeleteFood(meal.id)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}
-                      >
-                        🗑️
-                      </button>
+                      {meal.userId === user?.uid && (
+                        <button
+                          onClick={() => handleDeleteActivity(meal.id)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}
+                        >
+                          🗑️
+                        </button>
+                      )}
                     </div>
                   ))}
               </div>
@@ -3330,7 +3636,7 @@ function App() {
                     boxShadow: '0 4px 15px rgba(86, 171, 47, 0.3)', cursor: 'pointer'
                   }}
                 >
-                  <span>✨</span> {isDietAnalyzing ? 'Analyzing...' : 'Analyze My Diet & Suggest Next Meal'}
+                  <span>✨</span> {isDietAnalyzing ? t('analyzing_diet') : t('analyze_diet_suggest')}
                 </button>
 
                 {showDietAnalysis && (
@@ -3604,6 +3910,29 @@ function App() {
                                 {act.type === 'chore' && ` • ${act.details?.name || act.amount + ' pts'}`}
                                 {act.type === 'drink' && ` • ${act.amount} ml`}
                               </div>
+                              {/* Reactions */}
+                              {(act.type === 'chore' || act.type === 'food') && (
+                                <div style={{ display: 'flex', gap: '5px', marginTop: '5px' }}>
+                                  {['👍', '❤️', '👎'].map(emoji => {
+                                    const hasReacted = act.reactions?.[user.uid] === emoji;
+                                    const count = Object.values(act.reactions || {}).filter(r => r === emoji).length;
+                                    return (
+                                      <button
+                                        key={emoji}
+                                        onClick={(e) => { e.stopPropagation(); handleReaction(act.id, hasReacted ? null : emoji); }}
+                                        style={{
+                                          background: hasReacted ? '#e3f2fd' : 'transparent',
+                                          border: '1px solid #eee', borderRadius: '12px',
+                                          padding: '2px 6px', fontSize: '12px', cursor: 'pointer',
+                                          opacity: hasReacted ? 1 : 0.6
+                                        }}
+                                      >
+                                        {emoji} {count > 0 && count}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
                             {(currentUserRole === 'parent' || act.userId === user.uid) && (
                               <button

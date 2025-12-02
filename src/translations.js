@@ -103,7 +103,16 @@ export const translations = {
         "Take out Trash": "Take out Trash",
         "Do Laundry": "Do Laundry",
         "Tidy Up Room": "Tidy Up Room",
-        "Water Plants": "Water Plants"
+        "Water Plants": "Water Plants",
+        add_meal: "Add Meal",
+        what_did_you_eat: "What did you eat?",
+        image_attached: "Image Attached",
+        add_photo: "Add Photo",
+        healthy_plus_one: "🥗 Healthy (+1)",
+        junk_minus_one: "🍭 Sweet/Junk (-1)",
+        confirm_meal: "Confirm Meal 🍽️",
+        analyze_diet_suggest: "✨ Analyze My Diet & Suggest Next Meal",
+        analyzing_diet: "Analyzing..."
     },
     he: {
         // Tabs
@@ -209,6 +218,15 @@ export const translations = {
         "Take out Trash": "הורדת זבל",
         "Do Laundry": "כביסה",
         "Tidy Up Room": "סידור חדר",
-        "Water Plants": "השקיית עציצים"
+        "Water Plants": "השקיית עציצים",
+        add_meal: "הוסף ארוחה",
+        what_did_you_eat: "מה אכלת?",
+        image_attached: "תמונה צורפה",
+        add_photo: "הוסף תמונה",
+        healthy_plus_one: "🥗 בריא (+1)",
+        junk_minus_one: "🍭 מתוקים/ג׳אנק (-1)",
+        confirm_meal: "אשר ארוחה 🍽️",
+        analyze_diet_suggest: "✨ נתח תזונה והצע ארוחה הבאה",
+        analyzing_diet: "מנתח..."
     }
 };

@@ -1,7 +1,8 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
-import { db, auth, googleProvider, ai } from './firebase'
+import { db, auth, googleProvider, ai, analytics } from './firebase'
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth'
+import { logEvent } from "firebase/analytics";
 import {
   doc, setDoc, getDoc, updateDoc, arrayUnion, deleteDoc, getDocs, where,
   collection, addDoc, onSnapshot, query, orderBy, limit, deleteField
@@ -98,6 +99,14 @@ const getChoreDesign = (chore) => {
 
 // Version check removed to prevent loops
 function App() {
+  const logAppEvent = (eventName, params = {}) => {
+    try {
+      logEvent(analytics, eventName, params);
+    } catch (e) {
+      console.log("Analytics error", e);
+    }
+  };
+
   const [user, setUser] = useState(null);
   const [groupCode, setGroupCode] = useState(localStorage.getItem('tracker_group_code') || null);
   const [groupData, setGroupData] = useState(null);
@@ -955,9 +964,16 @@ function App() {
     }
   }, [user, groupData, groupCode]);
 
+  useEffect(() => {
+    if (activeTab) {
+      logAppEvent('view_tab', { tab_name: activeTab });
+    }
+  }, [activeTab]);
+
   const handleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
+      logAppEvent('login', { method: 'google' });
     } catch (error) {
       console.error("Error signing in:", error);
       alert("Failed to sign in. Please try again.");
@@ -1003,20 +1019,30 @@ function App() {
     try {
       if (isNewGroup) {
         await setDoc(groupRef, {
+          code,
           createdAt: new Date().toISOString(),
-          members: [memberData]
+          members: [memberData],
+          activities: [],
+          customChores: []
         });
+        logAppEvent('create_group', { group_code: code });
       } else {
         const docSnap = await getDoc(groupRef);
         if (!docSnap.exists()) {
-          return alert("Group not found! Please check the code.");
+          alert("Group not found!");
+          return;
         }
-        await updateDoc(groupRef, {
-          members: arrayUnion(memberData)
-        });
-      }
-
-      await setDoc(doc(db, 'users', user.uid), { groupCode: code }, { merge: true });
+        // Check if already member
+        const data = docSnap.data();
+        if (data.members.some(m => m.uid === user.uid)) {
+          // Already joined
+        } else {
+          await updateDoc(groupRef, {
+            members: arrayUnion(memberData)
+          });
+          logAppEvent('join_group', { group_code: code, role: 'child' });
+        }
+      } await setDoc(doc(db, 'users', user.uid), { groupCode: code }, { merge: true });
       setGroupCode(code);
       localStorage.setItem('tracker_group_code', code);
     } catch (error) {
@@ -1025,20 +1051,22 @@ function App() {
     }
   };
 
-  const handleTrack = async (type, amount = 0, details = {}) => {
+  const handleTrack = async (type, amount = 1, details = {}) => {
     if (!groupCode || !user) return;
     try {
-      const newActivity = {
+      const activity = {
         type,
-        amount: amount, // Store amount in ml (0 for non-drink activities)
+        amount,
         details,
+        timestamp: new Date().toISOString(),
         userId: user.uid,
-        userName: user.displayName,
-        timestamp: new Date().toISOString()
+        userName: user.displayName
       };
-      await addDoc(collection(db, 'groups', groupCode, 'activities'), newActivity);
+      await addDoc(collection(db, 'groups', groupCode, 'activities'), activity);
 
-      checkBadges(user.uid, [...activities, newActivity]);
+      logAppEvent('track_activity', { type, amount, name: details?.name || type });
+
+      // Check badges(user.uid, [...activities, newActivity]);
     } catch (error) {
       console.error("Error adding activity:", error);
     }
@@ -1819,6 +1847,8 @@ function App() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+
+
             {/* Install Button */}
             {!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone && (isIOS || isAndroid) && (
               <button
@@ -1877,7 +1907,7 @@ function App() {
               🔄
             </button>
             <button
-              onClick={() => setShowSettings(true)}
+              onClick={() => setActiveTab('family')}
               style={{
                 background: 'white',
                 borderRadius: '50%',
@@ -2339,55 +2369,62 @@ function App() {
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
                   <div style={{ width: '80px', height: '80px', position: 'relative', minWidth: 0 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={(() => {
-                            const targetPee = Number(goals.pee) || 10;
-                            const targetPoo = Number(goals.poo) || 1;
-                            const targetDrink = Number(goals.drink) || 1500;
+                    {(() => {
+                      const targetPee = Number(goals.pee) || 10;
+                      const targetPoo = Number(goals.poo) || 1;
+                      const targetDrink = Number(goals.drink) || 1500;
 
-                            const peeProgress = Math.min(myStats.pee / targetPee, 1);
-                            const pooProgress = Math.min(myStats.poo / targetPoo, 1);
-                            const drinkProgress = Math.min(myStats.drink / targetDrink, 1);
+                      const peeProgress = Math.min(myStats.pee / targetPee, 1);
+                      const pooProgress = Math.min(myStats.poo / targetPoo, 1);
+                      const drinkProgress = Math.min(myStats.drink / targetDrink, 1);
 
-                            const totalProgress = peeProgress + pooProgress + drinkProgress;
-                            const remaining = Math.max(0, 3 - totalProgress);
+                      const totalProgress = peeProgress + pooProgress + drinkProgress;
+                      const remaining = Math.max(0, 3 - totalProgress);
+                      const percentage = Math.round((totalProgress / 3) * 100);
 
-                            return [
-                              { name: 'Pee', value: peeProgress },
-                              { name: 'Poo', value: pooProgress },
-                              { name: 'Drink', value: drinkProgress },
-                              { name: 'Remaining', value: remaining }
-                            ];
-                          })()}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={25}
-                          outerRadius={35}
-                          startAngle={90}
-                          endAngle={-270}
-                          dataKey="value"
-                        >
-                          <Cell key="cell-pee" fill={COLORS.pee} />
-                          <Cell key="cell-poo" fill={COLORS.poo} />
-                          <Cell key="cell-drink" fill={COLORS.drink} />
-                          <Cell key="cell-rem" fill="#f0f0f0" />
-                        </Pie>
-                        <Tooltip
-                          formatter={(value, name) => [name === 'Remaining' ? '' : `${Math.round(value * 100)}%`, name]}
-                          contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', fontSize: '12px' }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                    <div style={{
-                      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '12px', fontWeight: 'bold', color: '#1a1a2e',
-                      pointerEvents: 'none'
-                    }}>
-                      {Math.round(((Math.min(myStats.pee / (goals.pee || 1), 1) + Math.min(myStats.poo / (goals.poo || 1), 1) + Math.min(myStats.drink / (goals.drink || 1), 1)) / 3) * 100)}%
-                    </div>
+                      const data = [
+                        { name: 'Pee', value: peeProgress },
+                        { name: 'Poo', value: pooProgress },
+                        { name: 'Drink', value: drinkProgress },
+                        { name: 'Remaining', value: remaining }
+                      ];
+
+                      return (
+                        <>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={data}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={25}
+                                outerRadius={35}
+                                startAngle={90}
+                                endAngle={-270}
+                                dataKey="value"
+                              >
+                                <Cell key="cell-pee" fill={COLORS.pee} />
+                                <Cell key="cell-poo" fill={COLORS.poo} />
+                                <Cell key="cell-drink" fill={COLORS.drink} />
+                                <Cell key="cell-rem" fill="#f0f0f0" />
+                              </Pie>
+                              <Tooltip
+                                formatter={(value, name) => [name === 'Remaining' ? '' : `${Math.round(value * 100)}%`, name]}
+                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', fontSize: '12px' }}
+                              />
+                            </PieChart>
+                          </ResponsiveContainer>
+                          <div style={{
+                            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '12px', fontWeight: 'bold', color: '#1a1a2e',
+                            pointerEvents: 'none'
+                          }}>
+                            {percentage}%
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -2401,7 +2438,7 @@ function App() {
                       const dateStr = getIsraelDateString(d);
                       const dayName = d.toLocaleDateString('en-US', { weekday: 'narrow' });
 
-                      const dayActs = activities.filter(a => getIsraelDateString(a.timestamp) === dateStr);
+                      const dayActs = activities.filter(a => getIsraelDateString(a.timestamp) === dateStr && a.userId === user.uid);
                       const stats = {
                         pee: dayActs.filter(a => a.type === 'pee').length,
                         poo: dayActs.filter(a => a.type === 'poo').length,
@@ -2593,7 +2630,7 @@ function App() {
                                                 {emoji}
                                                 {count > 0 && (
                                                   <span style={{ fontSize: '9px', color: '#666' }}>
-                                                    {count <= 2 ? reactorNames.join(', ') : count}
+                                                    {count}
                                                   </span>
                                                 )}
                                               </button>
@@ -2700,7 +2737,9 @@ function App() {
                               <div style={{ display: 'flex', gap: '4px' }} onClick={e => e.stopPropagation()}>
                                 {['👍', '❤️', '👎'].map(emoji => {
                                   const hasReacted = act.reactions?.[user.uid] === emoji;
-                                  const count = Object.values(act.reactions || {}).filter(r => r === emoji).length;
+                                  const reactorNames = getReactorNames(act, emoji);
+                                  const count = reactorNames.length;
+
                                   return (
                                     <button
                                       key={emoji}
@@ -2709,14 +2748,17 @@ function App() {
                                         e.stopPropagation();
                                         handleReaction(act.id, hasReacted ? null : emoji);
                                       }}
+                                      title={reactorNames.join(', ')}
                                       style={{
                                         background: hasReacted ? '#e3f2fd' : 'transparent',
                                         border: 'none', padding: '4px', fontSize: '14px', cursor: 'pointer',
                                         opacity: hasReacted ? 1 : 0.4,
-                                        minWidth: '24px'
+                                        minWidth: '24px',
+                                        display: 'flex', alignItems: 'center', gap: '2px'
                                       }}
                                     >
-                                      {emoji} {count > 0 && <span style={{ fontSize: '10px' }}>{count}</span>}
+                                      {emoji}
+                                      {count > 0 && <span style={{ fontSize: '10px' }}>{count}</span>}
                                     </button>
                                   );
                                 })}
@@ -3745,120 +3787,114 @@ function App() {
           )}
 
           {activeTab === 'family' && (
-            <div className="card" style={{ textAlign: 'center', padding: '20px' }}>
-              <div style={{ fontSize: '40px', marginBottom: '10px' }}>👨‍👩‍👧‍👦</div>
-              <h3 style={{ fontSize: '22px', marginBottom: '10px' }}>{t('your_family_group')}</h3>
+            <div className="card" style={{ textAlign: 'center', padding: '20px', paddingBottom: '80px' }}>
+              <div style={{ fontSize: '40px', marginBottom: '10px' }}>⚙️</div>
+              <h3 style={{ fontSize: '22px', marginBottom: '20px' }}>{t('settings')} & {t('family')}</h3>
 
+              {/* Family Section */}
+              <div style={{ marginBottom: '25px', padding: '15px', background: '#f5f7fa', borderRadius: '16px' }}>
+                <h4 style={{ marginBottom: '15px', color: '#666', fontSize: '14px', textAlign: 'left' }}>Family Group</h4>
+                <div style={{ background: 'white', padding: '15px', borderRadius: '12px', marginBottom: '15px', border: '1px solid #eee' }}>
+                  <p style={{ marginBottom: '5px', fontSize: '12px', color: '#888' }}>{t('group_code')}</p>
+                  <div style={{ fontSize: '28px', fontWeight: '800', color: '#1a1a2e', letterSpacing: '2px' }}>{groupCode}</div>
+                </div>
 
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {groupData?.members?.map(member => (
+                    <div key={member.uid} onClick={() => handleMemberClick(member)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'white', borderRadius: '10px', border: '1px solid #eee', cursor: 'pointer' }}>
+                      {member.photoURL ? <img src={member.photoURL} style={{ width: '30px', height: '30px', borderRadius: '50%' }} /> : <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>{member.name?.[0]}</div>}
+                      <div style={{ flex: 1, textAlign: 'left', fontWeight: '500', fontSize: '14px' }}>{member.name} {member.uid === user.uid && '(You)'}</div>
+                      <div style={{ fontSize: '12px', color: '#888' }}>{member.role}</div>
+                    </div>
+                  ))}
+                </div>
 
-              <div style={{ background: '#f5f7fa', padding: '15px', borderRadius: '12px', margin: '20px 0' }}>
-                <p style={{ marginBottom: '5px' }}>{t('group_code')}</p>
-                <div style={{ fontSize: '32px', fontWeight: '800', color: '#1a1a2e', letterSpacing: '2px' }}>{groupCode}</div>
-              </div>
-
-              {/* Gazette Button */}
-              <div style={{ marginBottom: '30px' }}>
-                <button
-                  onClick={() => canGenerateGazette() ? generateGazette() : setShowGazetteModal(true)}
-                  disabled={isGeneratingGazette}
-                  style={{
-                    marginTop: '20px',
-                    width: '100%', padding: '15px',
-                    background: canGenerateGazette() ? 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%)' : '#f5f5f5',
-                    color: canGenerateGazette() ? '#d81b60' : '#333',
-                    border: canGenerateGazette() ? 'none' : '1px solid #ddd',
-                    borderRadius: '16px',
-                    fontWeight: 'bold',
-                    cursor: isGeneratingGazette ? 'default' : 'pointer'
-                  }}
-                >
-                  {isGeneratingGazette ? 'Printing Gazette...' : (canGenerateGazette() ? '✨ Generate Daily Gazette' : '📰 Read Daily Gazette')}
+                <button onClick={handleShare} style={{ marginTop: '15px', width: '100%', padding: '10px', background: '#1a1a2e', color: 'white', borderRadius: '10px', fontWeight: 'bold' }}>
+                  {t('invite_family')} 📤
                 </button>
               </div>
 
-              {/* Family Members List */}
-              <div style={{ marginTop: '30px', marginBottom: '30px' }}>
-                <h4 style={{ fontSize: '16px', marginBottom: '15px', color: '#666', textAlign: 'left' }}>{t('family_members')} ({groupData?.members?.length || 0})</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {groupData?.members?.map(member => {
-                    const scores = getLeaderboardScores(member.uid);
-                    const total = scores.pee + scores.poo + scores.drink + scores.chore;
-                    return (
-                      <div key={member.uid}
-                        onClick={() => handleMemberClick(member)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '15px',
-                          background: member.uid === user?.uid ? '#f0f8ff' : '#f9f9f9',
-                          borderRadius: '12px',
-                          border: member.uid === user?.uid ? '2px solid #1a1a2e' : '1px solid #eee',
-                          textAlign: 'left',
-                          cursor: 'pointer'
-                        }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          {member.photoURL ? (
-                            <img src={member.photoURL} alt={member.name} style={{ width: '50px', height: '50px', borderRadius: '50%' }} />
-                          ) : (
-                            <div style={{
-                              width: '50px', height: '50px', borderRadius: '50%',
-                              background: '#1a1a2e', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontWeight: 'bold', fontSize: '20px', color: 'white'
-                            }}>
-                              {member.name ? member.name[0].toUpperCase() : '?'}
-                            </div>
-                          )}
-                          <div>
-                            <div style={{ fontWeight: '700', fontSize: '16px', color: '#1a1a2e' }}>
-                              {member.name} {member.uid === user?.uid && '(You)'}
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
-                              {total} {t('points_today')}
-                            </div>
-                            <div style={{ fontSize: '10px', color: '#666', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                              <span style={{ background: '#eee', padding: '2px 6px', borderRadius: '4px' }}>{member.role === 'parent' ? 'Parent 🛡️' : 'Child 👶'}</span>
-                              {currentUserRole === 'parent' && member.uid !== user.uid && (
-                                <select
-                                  value={member.role || 'child'}
-                                  onChange={(e) => handleUpdateRole(member.uid, e.target.value)}
-                                  style={{ padding: '2px', fontSize: '10px', borderRadius: '4px', border: '1px solid #ddd' }}
-                                >
-                                  <option value="child">Child</option>
-                                  <option value="parent">Parent</option>
-                                </select>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '6px', fontSize: '11px', color: '#666' }}>
-                          {scores.pee > 0 && <span>{ICONS.pee} {scores.pee}</span>}
-                          {scores.poo > 0 && <span>{ICONS.poo} {scores.poo}</span>}
-                          {scores.drink > 0 && <span>{ICONS.drink} {scores.drink}</span>}
-                          {scores.chore > 0 && <span>{ICONS.chore} {scores.chore}</span>}
-                        </div>
-                      </div>
-                    );
-                  })}
+              {/* Profile Section */}
+              <div style={{ marginBottom: '25px', padding: '15px', background: '#fff', borderRadius: '16px', border: '1px solid #eee', textAlign: 'left' }}>
+                <h4 style={{ marginBottom: '15px', color: '#666', fontSize: '14px' }}>My Profile</h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
+                  {user.photoURL ? <img src={user.photoURL} style={{ width: '50px', height: '50px', borderRadius: '50%' }} /> : <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#1a1a2e', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{user.displayName?.[0]}</div>}
+                  <div>
+                    <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{user.displayName}</div>
+                    <div style={{ fontSize: '12px', color: '#888' }}>{user.email}</div>
+                  </div>
+                </div>
+
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 'bold', color: '#333' }}>Weight (kg)</label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <input type="number" value={currentUserWeight || ''} onChange={(e) => handleUpdateWeight(e.target.value)} placeholder="e.g. 70" style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ddd', background: '#f9f9f9' }} />
                 </div>
               </div>
 
-              <button
-                onClick={handleShare}
-                style={{
-                  background: '#1a1a2e', color: 'white', padding: '15px 30px',
-                  borderRadius: '30px', fontWeight: 'bold', fontSize: '16px',
-                  boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
-                }}
-              >
-                {t('invite_family')} 📤
-              </button>
-              <div style={{ marginTop: '40px', borderTop: '1px solid #eee', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
-                <button onClick={handleExitGroup} style={{ color: '#e65100', fontWeight: '600' }}>{t('change_group')}</button>
+              {/* Preferences */}
+              <div style={{ marginBottom: '25px', padding: '15px', background: '#fff', borderRadius: '16px', border: '1px solid #eee', textAlign: 'left' }}>
+                <h4 style={{ marginBottom: '15px', color: '#666', fontSize: '14px' }}>Preferences</h4>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 'bold', color: '#333' }}>Language</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={() => setLanguage('en')} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #eee', background: language === 'en' ? '#e3f2fd' : 'white', color: language === 'en' ? '#1565c0' : '#333', fontWeight: 'bold' }}>🇺🇸 English</button>
+                    <button onClick={() => setLanguage('he')} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #eee', background: language === 'he' ? '#e3f2fd' : 'white', color: language === 'he' ? '#1565c0' : '#333', fontWeight: 'bold' }}>🇮🇱 Hebrew</button>
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 'bold', color: '#333' }}>My Bottle Size (ml)</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <input type="number" value={bottleSize} onChange={(e) => setBottleSize(e.target.value === '' ? '' : parseInt(e.target.value))} placeholder="e.g. 750" style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ddd', background: '#f9f9f9' }} />
+                    <button onClick={() => handleSaveBottleSize(bottleSize)} disabled={saveStatus === 'saving'} style={{ background: saveStatus === 'saved' ? '#4caf50' : '#1a1a2e', color: 'white', border: 'none', padding: '0 20px', borderRadius: '10px', fontWeight: 'bold' }}>{saveStatus === 'saved' ? '✓' : 'Save'}</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Daily Goals */}
+              <div style={{ marginBottom: '25px', padding: '15px', background: '#fff', borderRadius: '16px', border: '1px solid #eee', textAlign: 'left' }}>
+                <h4 style={{ marginBottom: '15px', color: '#666', fontSize: '14px' }}>Daily Goals 🎯</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  {['pee', 'drink', 'poo'].map(type => (
+                    <div key={type} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${COLORS[type]}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{ICONS[type]}</div>
+                        <div style={{ fontWeight: '600', textTransform: 'capitalize', fontSize: '14px' }}>{t(type)}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#f5f7fa', padding: '4px', borderRadius: '12px' }}>
+                        <button onClick={() => handleSaveGoals({ ...goals, [type]: Math.max(0, (goals[type] || 0) - (type === 'drink' ? 250 : 1)) })} style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'white', border: 'none', fontWeight: 'bold' }}>-</button>
+                        <span style={{ width: '40px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold' }}>{goals[type] || 0}</span>
+                        <button onClick={() => handleSaveGoals({ ...goals, [type]: (goals[type] || 0) + (type === 'drink' ? 250 : 1) })} style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'white', border: 'none', fontWeight: 'bold' }}>+</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* What's New */}
+              <div style={{ marginBottom: '25px', padding: '15px', background: '#e3f2fd', borderRadius: '16px', border: '1px solid #bbdefb', textAlign: 'left' }}>
+                <h4 style={{ marginBottom: '10px', color: '#1565c0', fontSize: '14px' }}>What's New 🚀</h4>
+                <ul style={{ paddingLeft: '20px', margin: 0, fontSize: '13px', color: '#333', lineHeight: '1.6' }}>
+                  <li><strong>Safari Login Fix:</strong> Improved login reliability.</li>
+                  <li><strong>Reaction Names:</strong> See who reacted to your activities!</li>
+                  <li><strong>Food Analysis:</strong> AI-powered food tracking with photos.</li>
+                  <li><strong>Settings Page:</strong> Dedicated page for better configuration.</li>
+                </ul>
+              </div>
+
+              {/* System */}
+              <div style={{ marginBottom: '25px', padding: '15px', background: '#fff', borderRadius: '16px', border: '1px solid #eee', textAlign: 'left' }}>
+                <h4 style={{ marginBottom: '15px', color: '#666', fontSize: '14px' }}>System</h4>
+                <button onClick={() => window.location.reload()} style={{ width: '100%', padding: '12px', marginBottom: '10px', background: '#f5f5f5', color: '#333', border: 'none', borderRadius: '12px', fontWeight: '600', fontSize: '14px' }}>🔄 Refresh App Data</button>
+                <button onClick={handleExitGroup} style={{ width: '100%', padding: '12px', marginBottom: '10px', background: '#fff3e0', color: '#e65100', border: 'none', borderRadius: '12px', fontWeight: '600', fontSize: '14px' }}>{t('change_group')}</button>
                 {currentUserRole === 'parent' && (
-                  <button onClick={handleResetData} style={{ color: '#d32f2f', fontWeight: '600' }}>{t('reset_data')} 🗑️</button>
+                  <button onClick={handleResetData} style={{ width: '100%', padding: '12px', marginBottom: '10px', background: '#ffebee', color: '#d32f2f', border: 'none', borderRadius: '12px', fontWeight: '600', fontSize: '14px' }}>{t('reset_data')} 🗑️</button>
                 )}
-                <button onClick={handleLogout} style={{ color: '#8b8b9e' }}>{t('logout')}</button>
+                <button onClick={handleLogout} style={{ width: '100%', padding: '12px', background: '#ffebee', color: '#d32f2f', border: 'none', borderRadius: '12px', fontWeight: '600', fontSize: '14px' }}>🚪 {t('logout')}</button>
+              </div>
+
+              <div style={{ textAlign: 'center', color: '#aaa', fontSize: '12px', marginTop: '20px' }}>
+                Activity Tracker v{__APP_VERSION__}<br />
+                Group: {groupCode}
               </div>
 
               {/* Member Details Modal */}
@@ -3973,7 +4009,8 @@ function App() {
             </div>
           )}
         </div>
-      </div >
+
+      </div>
 
       {/* Badge Celebration Modal */}
       {
@@ -4015,129 +4052,7 @@ function App() {
         )
       }
 
-      {/* Settings Modal */}
-      {
-        showSettings && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.5)', zIndex: 3000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '20px'
-          }} onClick={() => setShowSettings(false)}>
-            <div style={{
-              background: 'white', borderRadius: '24px', padding: '25px',
-              width: '100%', maxWidth: '350px', maxHeight: '85vh', overflowY: 'auto',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
-            }} onClick={e => e.stopPropagation()}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ margin: 0 }}>Settings ⚙️</h3>
-                <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>×</button>
-              </div>
 
-              {/* Manual Refresh Button */}
-              <button
-                onClick={() => window.location.reload()}
-                style={{
-                  width: '100%', padding: '12px', marginBottom: '20px',
-                  background: '#f5f5f5', color: '#333', border: '1px solid #ddd',
-                  borderRadius: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-                }}
-              >
-                🔄 Refresh App Data
-              </button>
-
-              {/* Bottle Size Settings */}
-              <div style={{ marginBottom: '25px', padding: '15px', background: '#f5f5f5', borderRadius: '12px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold', color: '#333' }}>My Bottle Size (ml)</label>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <input
-                    type="number"
-                    value={bottleSize}
-                    onChange={(e) => setBottleSize(e.target.value === '' ? '' : parseInt(e.target.value))}
-                    placeholder="e.g. 750"
-                    style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ddd' }}
-                  />
-                  <button
-                    onClick={() => handleSaveBottleSize(bottleSize)}
-                    disabled={saveStatus === 'saving'}
-                    style={{
-                      background: saveStatus === 'saved' ? '#4caf50' : '#1a1a2e',
-                      color: 'white', border: 'none', padding: '0 20px', borderRadius: '10px', fontWeight: 'bold',
-                      transition: 'background 0.3s'
-                    }}
-                  >
-                    {saveStatus === 'saving' ? '...' : saveStatus === 'saved' ? 'Saved!' : 'Save'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Daily Goals Section */}
-              <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ marginBottom: '15px' }}>Daily Goals 🎯</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  {['pee', 'drink', 'poo'].map(type => (
-                    <div key={type} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{
-                          width: '40px', height: '40px', borderRadius: '10px',
-                          background: `${COLORS[type]}20`, display: 'flex',
-                          alignItems: 'center', justifyContent: 'center', fontSize: '20px'
-                        }}>
-                          {ICONS[type]}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: '700', textTransform: 'capitalize', fontSize: '14px' }}>
-                            {type === 'poo' ? 'Poop' : type}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#f5f7fa', padding: '4px', borderRadius: '16px' }}>
-                        <button
-                          onClick={() => {
-                            const step = type === 'drink' ? 250 : 1;
-                            handleSaveGoals({ ...goals, [type]: Math.max(0, (goals[type] || (type === 'drink' ? 1500 : 0)) - step) });
-                          }}
-                          style={{
-                            width: '28px', height: '28px', borderRadius: '50%',
-                            background: 'white', boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
-                            fontWeight: 'bold', color: '#1a1a2e', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                          }}
-                        >-</button>
-
-                        <input
-                          type="number"
-                          value={goals[type] || (type === 'drink' ? 1500 : 0)}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value) || 0;
-                            handleSaveGoals({ ...goals, [type]: val });
-                          }}
-                          style={{
-                            width: '50px', textAlign: 'center', border: 'none', background: 'transparent',
-                            fontSize: '14px', fontWeight: 'bold', color: '#1a1a2e'
-                          }}
-                        />
-
-                        <button
-                          onClick={() => {
-                            const step = type === 'drink' ? 250 : 1;
-                            handleSaveGoals({ ...goals, [type]: (goals[type] || (type === 'drink' ? 1500 : 0)) + step });
-                          }}
-                          style={{
-                            width: '28px', height: '28px', borderRadius: '50%',
-                            background: 'white', boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                            fontWeight: 'bold', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                          }}
-                        >+</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-      }
 
 
       {/* Floating Chat Button */}
@@ -4439,7 +4354,7 @@ function App() {
         }
       `}</style>
     </div >
-  )
+  );
 }
 
 export default App

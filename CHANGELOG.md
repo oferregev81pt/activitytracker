@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.0] - 2025-12-02
+### Added
+- **Settings Page**: Converted settings modal to a full page integrated with Family view.
+- **Analytics**: Integrated Firebase Analytics for tracking user engagement.
+- **What's New**: Added a section to view recent app updates.
+
+### Fixed
+- **Daily Goals Chart**: Fixed percentage calculation to consistently use goal defaults.
+- **Reaction Hover**: Improved reaction button UI to show names on hover/click.
+
 ## [1.1.1] - 2025-12-02
 ### Fixed
 - **Safari Login Issue**: Switched to `signInWithPopup` to resolve "missing initial state" errors on Safari and other browsers with strict privacy settings.

@@ -3,6 +3,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getAI, GoogleAIBackend } from "firebase/ai";
+import { getAnalytics } from "firebase/analytics";
 
 // TODO: Replace the following with your app's Firebase project configuration
 // See: https://firebase.google.com/docs/web/setup#config-object
@@ -24,3 +25,4 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const ai = getAI(app, { backend: new GoogleAIBackend() });
+export const analytics = getAnalytics(app);

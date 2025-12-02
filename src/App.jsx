@@ -626,6 +626,16 @@ function App() {
   const [leaderboardRange, setLeaderboardRange] = useState('day'); // 'day', 'week', 'month', 'all'
   const [showDrinkSelection, setShowDrinkSelection] = useState(false);
   const [showFoodSelection, setShowFoodSelection] = useState(false);
+
+  // Lock body scroll when modal is open (iOS fix)
+  useEffect(() => {
+    if (showFoodSelection) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [showFoodSelection]);
   const [showAllFood, setShowAllFood] = useState(false);
   const [showAllChores, setShowAllChores] = useState(false);
   const [expandedChoreUser, setExpandedChoreUser] = useState(null);
@@ -2454,7 +2464,7 @@ function App() {
                       const dateStr = getIsraelDateString(d);
                       const dayName = d.toLocaleDateString('en-US', { weekday: 'narrow' });
 
-                      const dayActs = activities.filter(a => getIsraelDateString(a.timestamp) === dateStr);
+                      const dayActs = activities.filter(a => getIsraelDateString(a.timestamp) === dateStr && a.userId === user.uid);
                       const stats = {
                         pee: dayActs.filter(a => a.type === 'pee').length,
                         poo: dayActs.filter(a => a.type === 'poo').length,

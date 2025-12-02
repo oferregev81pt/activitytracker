@@ -955,12 +955,12 @@ function App() {
     }
   }, [user, groupData, groupCode]);
 
-  const handleGoogleLogin = async () => {
+  const handleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
-      console.error("Login failed", error);
-      alert("Login failed: " + error.message);
+      console.error("Error signing in:", error);
+      alert("Failed to sign in. Please try again.");
     }
   };
 
@@ -1070,6 +1070,16 @@ function App() {
       console.error("Error undoing activity:", error);
       alert("Failed to undo.");
     }
+  };
+
+  const getReactorNames = (act, emoji) => {
+    if (!act.reactions) return [];
+    return Object.entries(act.reactions)
+      .filter(([uid, reaction]) => reaction === emoji)
+      .map(([uid]) => {
+        const member = groupData?.members?.find(m => m.uid === uid);
+        return member ? member.name.split(' ')[0] : 'Unknown';
+      });
   };
 
   const handleReaction = async (activityId, reactionType) => {
@@ -2560,7 +2570,9 @@ function App() {
                                         <div style={{ display: 'flex', gap: '4px' }} onClick={e => e.stopPropagation()}>
                                           {['👍', '❤️', '👎'].map(emoji => {
                                             const hasReacted = act.reactions?.[user.uid] === emoji;
-                                            const count = Object.values(act.reactions || {}).filter(r => r === emoji).length;
+                                            const reactorNames = getReactorNames(act, emoji);
+                                            const count = reactorNames.length;
+
                                             return (
                                               <button
                                                 key={emoji}
@@ -2569,14 +2581,21 @@ function App() {
                                                   e.stopPropagation();
                                                   handleReaction(act.id, hasReacted ? null : emoji);
                                                 }}
+                                                title={reactorNames.join(', ')}
                                                 style={{
                                                   background: hasReacted ? '#e3f2fd' : 'transparent',
                                                   border: 'none', padding: '2px', fontSize: '12px', cursor: 'pointer',
                                                   opacity: hasReacted ? 1 : 0.4,
-                                                  minWidth: '20px'
+                                                  minWidth: '20px',
+                                                  display: 'flex', alignItems: 'center', gap: '2px'
                                                 }}
                                               >
-                                                {emoji} {count > 0 && <span style={{ fontSize: '9px' }}>{count}</span>}
+                                                {emoji}
+                                                {count > 0 && (
+                                                  <span style={{ fontSize: '9px', color: '#666' }}>
+                                                    {count <= 2 ? reactorNames.join(', ') : count}
+                                                  </span>
+                                                )}
                                               </button>
                                             );
                                           })}

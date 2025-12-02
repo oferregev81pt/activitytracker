@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.1] - 2025-12-02
+### Fixed
+- **Safari Login Issue**: Switched to `signInWithPopup` to resolve "missing initial state" errors on Safari and other browsers with strict privacy settings.
+- **Reaction Names**: Added tooltip and count display for who reacted to activities.
+
 ## [1.1.0] - 2025-12-02
 ### Added
 - **Food Tracking Overhaul**: New "Add Meal" modal with AI analysis, photo upload, and healthy/junk classification.

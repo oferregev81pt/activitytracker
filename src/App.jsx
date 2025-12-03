@@ -197,7 +197,14 @@ function App() {
 
   // AI Chef & Shopping List State
   const [shoppingList, setShoppingList] = useState([]);
-  const [showShoppingInput, setShowShoppingInput] = useState(false);
+  const [newItemText, setNewItemText] = useState('');
+
+  const handleAddItem = () => {
+    if (newItemText.trim()) {
+      handleAddManualShoppingItem(newItemText);
+      setNewItemText('');
+    }
+  };
 
   const groupedShoppingList = useMemo(() => {
     const groups = {};
@@ -4119,60 +4126,41 @@ function App() {
                   </div>
                 )}
 
-                {/* FAB */}
-                <button
-                  onClick={() => setShowShoppingInput(true)}
-                  style={{
-                    position: 'fixed', bottom: '100px', left: '20px',
-                    width: '56px', height: '56px', borderRadius: '50%',
-                    background: '#4f46e5', color: 'white',
-                    boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '32px', border: 'none', cursor: 'pointer',
-                    zIndex: 100, transition: 'transform 0.1s'
-                  }}
-                >
-                  +
-                </button>
-
-                {/* Input Overlay */}
-                {showShoppingInput && (
-                  <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(4px)',
-                    zIndex: 200, display: 'flex', alignItems: 'flex-end'
-                  }} onClick={() => setShowShoppingInput(false)}>
-                    <div
-                      onClick={e => e.stopPropagation()}
-                      style={{
-                        width: '100%', background: 'white', padding: '20px',
-                        borderTopLeftRadius: '20px', borderTopRightRadius: '20px',
-                        boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
-                        animation: 'slideUp 0.3s ease-out'
-                      }}
-                    >
-                      <input
-                        autoFocus
-                        type="text"
-                        placeholder="Add item (e.g. Milk)..."
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleAddManualShoppingItem(e.target.value);
-                            e.target.value = '';
-                            // Keep input open for multiple items
-                          }
-                        }}
-                        style={{
-                          width: '100%', padding: '15px', fontSize: '18px', border: 'none',
-                          borderBottom: '2px solid #4f46e5', outline: 'none', background: 'transparent'
-                        }}
-                      />
-                      <div style={{ marginTop: '10px', fontSize: '12px', color: '#888', textAlign: 'right' }}>
-                        Press Enter to add
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* Fixed Bottom Input Bar */}
+                <div style={{
+                  position: 'fixed', bottom: '80px', left: 0, right: 0,
+                  padding: '10px 20px',
+                  background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)',
+                  borderTop: '1px solid rgba(0,0,0,0.05)',
+                  display: 'flex', gap: '10px', alignItems: 'center',
+                  zIndex: 60
+                }}>
+                  <input
+                    type="text"
+                    value={newItemText}
+                    onChange={(e) => setNewItemText(e.target.value)}
+                    placeholder="Add item..."
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddItem()}
+                    style={{
+                      flex: 1, padding: '12px 15px', borderRadius: '25px',
+                      border: '1px solid #e0e0e0', background: '#f5f5f5',
+                      fontSize: '16px', outline: 'none'
+                    }}
+                  />
+                  <button
+                    onClick={handleAddItem}
+                    disabled={!newItemText.trim()}
+                    style={{
+                      width: '45px', height: '45px', borderRadius: '50%',
+                      background: newItemText.trim() ? '#4f46e5' : '#e0e0e0',
+                      color: 'white', border: 'none',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '24px', cursor: 'pointer', transition: 'background 0.2s'
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             )
           }

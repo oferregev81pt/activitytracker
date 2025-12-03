@@ -65,6 +65,7 @@ export const translations = {
         analyzing: "Analyzing...",
         todays_meals: "Today's Meals",
         no_meals: "No meals logged yet today.",
+        analyze_food: "Analyze Food",
 
         // Trends Tab
         weekly_trends: "Weekly Trends",
@@ -324,6 +325,7 @@ export const translations = {
         analyzing: "מנתח...",
         todays_meals: "ארוחות היום",
         no_meals: "טרם תועדו ארוחות היום.",
+        analyze_food: "נתח אוכל",
 
         // Trends Tab
         weekly_trends: "מגמות שבועיות",

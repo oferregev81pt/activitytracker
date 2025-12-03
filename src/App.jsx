@@ -1447,8 +1447,8 @@ function App() {
         "totalCalories": 100,
           "totalProtein": 5,
             "healthScore": 8, // 1-10
-            "category": "Healthy", // One of: Healthy, Junk, Sweet, Processed
-            "isHealthy": true, // true for nutritious food, false for sweets/junk/processed
+            "category": "Healthy", // One of: Healthy, Junk, Sweet
+            "isHealthy": true, // true for nutritious food, false for sweets/junk
             "classificationReason": "Brief reason for classification",
               "feedback": "Brief feedback sentence"
     }
@@ -2900,13 +2900,11 @@ function App() {
                       </div>
 
                       {/* Chart */}
-                      <div style={{ height: '200px', width: '100%' }}>
+                      <div style={{ height: '250px', width: '100%' }}>
                         {(() => {
-                          // Filter activities
-                          const filteredFood = activities.filter(a => {
+                          // Filter activities by range
+                          const filteredByRange = activities.filter(a => {
                             if (a.type !== 'food') return false;
-                            if (foodScope === 'me' && a.userId !== user.uid) return false;
-
                             const date = new Date(a.timestamp);
                             const now = new Date();
                             if (foodRange === 'day') return getIsraelDateString(date) === getIsraelDateString(now);
@@ -2923,59 +2921,97 @@ function App() {
                             return true;
                           });
 
-                          // Classify
-                          let healthy = 0;
-                          let junk = 0;
-                          let sweet = 0;
+                          if (foodScope === 'me') {
+                            const myFood = filteredByRange.filter(a => a.userId === user.uid);
+                            let healthy = 0;
+                            let junk = 0;
+                            let sweet = 0;
 
-                          filteredFood.forEach(a => {
-                            const category = a.details?.category;
-                            const isHealthy = a.details?.isHealthy;
+                            myFood.forEach(a => {
+                              const category = a.details?.category;
+                              const isHealthy = a.details?.isHealthy;
 
-                            if (category === 'Sweet') {
-                              sweet++;
-                            } else if (category === 'Junk' || category === 'Processed') {
-                              junk++;
-                            } else if (category === 'Healthy') {
-                              healthy++;
-                            } else {
-                              // Fallback if category is missing
-                              if (isHealthy) healthy++;
-                              else junk++;
+                              if (category === 'Sweet') {
+                                sweet++;
+                              } else if (category === 'Junk' || category === 'Processed') {
+                                junk++;
+                              } else if (category === 'Healthy') {
+                                healthy++;
+                              } else {
+                                // Fallback
+                                if (isHealthy) healthy++;
+                                else junk++;
+                              }
+                            });
+
+                            const data = [
+                              { name: 'Healthy', value: healthy, color: '#66bb6a' },
+                              { name: 'Junk', value: junk, color: '#ef5350' },
+                              { name: 'Sweet', value: sweet, color: '#ab47bc' }
+                            ].filter(d => d.value > 0);
+
+                            if (data.length === 0) {
+                              return <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>No data</div>;
                             }
-                          });
 
-                          const data = [
-                            { name: 'Healthy', value: healthy, color: '#66bb6a' },
-                            { name: 'Junk', value: junk, color: '#ef5350' },
-                            { name: 'Sweet', value: sweet, color: '#ab47bc' }
-                          ].filter(d => d.value > 0);
+                            return (
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={data}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                  >
+                                    {data.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip />
+                                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            );
+                          } else {
+                            // Everyone - Stacked Bar Chart
+                            const userMap = {};
+                            filteredByRange.forEach(a => {
+                              const userName = a.userName || 'Unknown';
+                              if (!userMap[userName]) userMap[userName] = { name: userName, Healthy: 0, Junk: 0, Sweet: 0 };
 
-                          if (data.length === 0) {
-                            return <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>No data</div>;
+                              const category = a.details?.category;
+                              const isHealthy = a.details?.isHealthy;
+
+                              if (category === 'Sweet') userMap[userName].Sweet++;
+                              else if (category === 'Junk' || category === 'Processed') userMap[userName].Junk++;
+                              else if (category === 'Healthy') userMap[userName].Healthy++;
+                              else {
+                                if (isHealthy) userMap[userName].Healthy++;
+                                else userMap[userName].Junk++;
+                              }
+                            });
+
+                            const data = Object.values(userMap);
+                            if (data.length === 0) return <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>No data</div>;
+
+                            return (
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                  <XAxis dataKey="name" />
+                                  <YAxis allowDecimals={false} />
+                                  <Tooltip />
+                                  <Legend />
+                                  <Bar dataKey="Healthy" stackId="a" fill="#66bb6a" />
+                                  <Bar dataKey="Junk" stackId="a" fill="#ef5350" />
+                                  <Bar dataKey="Sweet" stackId="a" fill="#ab47bc" />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            );
                           }
-
-                          return (
-                            <ResponsiveContainer width="100%" height="100%">
-                              <PieChart>
-                                <Pie
-                                  data={data}
-                                  cx="50%"
-                                  cy="50%"
-                                  innerRadius={60}
-                                  outerRadius={80}
-                                  paddingAngle={5}
-                                  dataKey="value"
-                                >
-                                  {data.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                  ))}
-                                </Pie>
-                                <Tooltip />
-                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                              </PieChart>
-                            </ResponsiveContainer>
-                          );
                         })()}
                       </div>
                     </div>

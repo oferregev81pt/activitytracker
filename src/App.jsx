@@ -2515,15 +2515,7 @@ function App() {
                       <span>📸</span> {t('add_meal')}
                     </button>
 
-                    {/* Recent Meals Mini-List */}
-                    <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '5px' }}>
-                      {activities.filter(a => a.type === 'food' && a.userId === user.uid).slice(0, 3).map(meal => (
-                        <div key={meal.id} style={{ minWidth: '100px', padding: '10px', background: '#f5f5f5', borderRadius: '12px', fontSize: '12px' }}>
-                          <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>{meal.details?.name || meal.input || 'Meal'}</div>
-                          <div style={{ color: '#888' }}>{meal.details?.totalCalories || 0} cal</div>
-                        </div>
-                      ))}
-                    </div>
+
                   </div>
                 )}
 
@@ -2549,6 +2541,58 @@ function App() {
                     </button>
                   </div>
                 )}
+
+                {/* Recent History List (Common for all categories) */}
+                <div style={{ width: '100%', marginTop: '25px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Recent {t(homeCategory) || homeCategory}
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {activities
+                      .filter(a => a.type === homeCategory && getIsraelDateString(a.timestamp) === getIsraelDateString())
+                      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                      .slice(0, 5)
+                      .map(act => {
+                        const member = groupData?.members?.find(m => m.uid === act.userId);
+                        return (
+                          <div key={act.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px', background: '#f8f9fa', borderRadius: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <div style={{
+                                width: '32px', height: '32px', borderRadius: '50%', background: '#eee',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', color: '#555'
+                              }}>
+                                {member?.photoURL ? <img src={member.photoURL} style={{ width: '100%', height: '100%', borderRadius: '50%' }} /> : (member?.name?.[0] || '?')}
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>
+                                  {act.details?.name || act.input || (act.amount ? `${act.amount} ${act.type === 'drink' ? 'ml' : 'pts'}` : t(act.type))}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#888' }}>
+                                  {new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {member?.name || 'Unknown'}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Delete Button (Only for own activities) */}
+                            {act.userId === user.uid && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDeleteActivity(act.id); }}
+                                style={{ background: 'none', border: 'none', opacity: 0.3, cursor: 'pointer', fontSize: '12px' }}
+                              >
+                                🗑️
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                    {activities.filter(a => a.type === homeCategory && getIsraelDateString(a.timestamp) === getIsraelDateString()).length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '20px', color: '#aaa', fontStyle: 'italic', fontSize: '13px' }}>
+                        No {t(homeCategory)} logs today yet.
+                      </div>
+                    )}
+                  </div>
+                </div>
 
               </div>
 

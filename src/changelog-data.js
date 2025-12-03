@@ -1,6 +1,13 @@
 // Auto-generated from CHANGELOG.md - Do not edit manually
 export const changelogVersions = [
   {
+    "version": "1.5.3",
+    "date": "2025-12-03",
+    "changes": [
+      "Settings: Added missing \"Chores\" goal configuration to Daily Goals settings (default: 10)"
+    ]
+  },
+  {
     "version": "1.5.2",
     "date": "2025-12-03",
     "changes": [
@@ -34,17 +41,6 @@ export const changelogVersions = [
       "Login Error: Added missing handleGoogleLogin function",
       "Scroll Issues: Fixed overflow and scroll behavior across all pages",
       "Header Icons: Removed redundant refresh and settings icons from header"
-    ]
-  },
-  {
-    "version": "1.4.0",
-    "date": "2025-12-03",
-    "changes": [
-      "Navigation Overhaul: Streamlined bottom navigation with Trends, Home, Shopping, and Menu.",
-      "Side Menu: New slide-out menu for quick access to Family, Profile, Goals, and System settings.",
-      "Settings Pages: Dedicated full-screen pages for each settings category.",
-      "Home Tab: Centered and emphasized in the navigation bar.",
-      "Logout: Added explicit Logout option in the side menu."
     ]
   }
 ];

@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.5.4] - 2025-12-03
+### Fixed
+- **Daily Goals**: Included "Chores" in the daily goal progress donut chart calculation and visualization
+
 ## [1.5.3] - 2025-12-03
 ### Fixed
 - **Settings**: Added missing "Chores" goal configuration to Daily Goals settings (default: 10)

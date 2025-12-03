@@ -2471,19 +2471,22 @@ function App() {
                     const targetPee = Number(goals.pee) || 10;
                     const targetPoo = Number(goals.poo) || 1;
                     const targetDrink = Number(goals.drink) || 1500;
+                    const targetChore = Number(goals.chore) || 10;
 
                     const peeProgress = Math.min(myStats.pee / targetPee, 1);
                     const pooProgress = Math.min(myStats.poo / targetPoo, 1);
                     const drinkProgress = Math.min(myStats.drink / targetDrink, 1);
+                    const choreProgress = Math.min(myStats.chore / targetChore, 1);
 
-                    const totalProgress = peeProgress + pooProgress + drinkProgress;
-                    const remaining = Math.max(0, 3 - totalProgress);
-                    const percentage = Math.round((totalProgress / 3) * 100);
+                    const totalProgress = peeProgress + pooProgress + drinkProgress + choreProgress;
+                    const remaining = Math.max(0, 4 - totalProgress);
+                    const percentage = Math.round((totalProgress / 4) * 100);
 
                     const data = [
                       { name: 'Pee', value: peeProgress },
                       { name: 'Poo', value: pooProgress },
                       { name: 'Drink', value: drinkProgress },
+                      { name: 'Chore', value: choreProgress },
                       { name: 'Remaining', value: remaining }
                     ];
 
@@ -2505,6 +2508,7 @@ function App() {
                               <Cell key="cell-pee" fill={COLORS.pee} />
                               <Cell key="cell-poo" fill={COLORS.poo} />
                               <Cell key="cell-drink" fill={COLORS.drink} />
+                              <Cell key="cell-chore" fill={COLORS.chore} />
                               <Cell key="cell-rem" fill="#f0f0f0" />
                             </Pie>
                           </PieChart>

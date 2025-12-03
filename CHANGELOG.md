@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.7.1] - 2025-12-03
+### Fixed
+- **Daily Gazette**: Restored the missing button to access the Daily Gazette summary on the Home Screen.
+
 ## [1.7.0] - 2025-12-03
 ### Added
 - **Chef Mode 👨‍🍳**: AI generates shopping lists from meal ideas (e.g., "Pizza" -> Ingredients).

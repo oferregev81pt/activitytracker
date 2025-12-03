@@ -1,6 +1,16 @@
 // Auto-generated from CHANGELOG.md - Do not edit manually
 export const changelogVersions = [
   {
+    "version": "1.6.1",
+    "date": "2025-12-03",
+    "changes": [
+      "Food Breakdown Chart: Visual breakdown of Healthy, Junk, and Sweet foods.",
+      "Family Food Graph: Stacked bar chart showing food consumption by family member and category.",
+      "Food Categories: Explicit \"Sweet\" category added to AI analysis and confirmation modal.",
+      "Food Confirmation: Updated modal to allow selecting between Healthy, Junk, and Sweet."
+    ]
+  },
+  {
     "version": "1.6.0",
     "date": "2025-12-03",
     "changes": [
@@ -25,17 +35,6 @@ export const changelogVersions = [
     "date": "2025-12-03",
     "changes": [
       "Settings: Added missing \"Chores\" goal configuration to Daily Goals settings (default: 10)"
-    ]
-  },
-  {
-    "version": "1.5.2",
-    "date": "2025-12-03",
-    "changes": [
-      "Bathroom Update: Combined Pee and Poo into a single \"Bathroom\" category with a new icon (🧻)",
-      "Carousel Layout: Improved carousel symmetry for better visual balance",
-      "iOS Improvements: Fixed \"Add Meal\" modal visibility and scrolling on iOS devices",
-      "Language Settings: Language preference is now saved and persists across app reloads",
-      "Activity Logs: Added icons to activity log entries for better readability"
     ]
   }
 ];

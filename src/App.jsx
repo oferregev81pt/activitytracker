@@ -201,6 +201,91 @@ function App() {
   const [foodScope, setFoodScope] = useState('me');
   const [foodRange, setFoodRange] = useState('day');
 
+  // Chef Mode & Smart Replenish
+  const [showChefMode, setShowChefMode] = useState(false);
+  const [chefInput, setChefInput] = useState('');
+  const [isChefThinking, setIsChefThinking] = useState(false);
+  const [suggestedItems, setSuggestedItems] = useState([]);
+  const [showSuggestionsModal, setShowSuggestionsModal] = useState(false);
+
+  const handleChefSuggest = async () => {
+    if (!chefInput.trim()) return;
+    setIsChefThinking(true);
+    try {
+      const model = getGenerativeModel(ai, { model: "gemini-2.5-flash" });
+      const prompt = `User wants to cook: "${chefInput}". 
+      List essential ingredients for a shopping list. 
+      Exclude common pantry items like salt, pepper, oil unless critical.
+      Return JSON: { "items": [{ "name": "Pasta", "category": "household" }] }.
+      Categories: produce, dairy, bakery, meat, frozen, household, other.
+      Output Language: ${language === 'he' ? 'Hebrew' : 'English'}`;
+
+      const result = await model.generateContent(prompt);
+      const text = result.response.text().replace(/```json|```/g, '').trim();
+      const response = JSON.parse(text);
+
+      setSuggestedItems(response.items.map(i => ({ ...i, checked: true }))); // Default all checked
+      setShowChefMode(false);
+      setShowSuggestionsModal(true);
+      setChefInput('');
+    } catch (error) {
+      console.error("Chef Mode failed:", error);
+      alert("Chef is busy! Try again.");
+    } finally {
+      setIsChefThinking(false);
+    }
+  };
+
+  const handleSmartReplenish = async () => {
+    setIsChefThinking(true);
+    try {
+      // Get recent food logs (last 14 days)
+      const twoWeeksAgo = new Date();
+      twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+      const recentFood = activities
+        .filter(a => a.type === 'food' && new Date(a.timestamp) >= twoWeeksAgo)
+        .map(a => a.details?.name || a.input)
+        .join(', ');
+
+      // Get current shopping list
+      const currentList = shoppingList.map(i => i.name).join(', ');
+
+      const model = getGenerativeModel(ai, { model: "gemini-2.5-flash" });
+      const prompt = `Analyze user's recent food logs: "${recentFood}".
+      Current shopping list: "${currentList}".
+      Suggest 3-5 items they likely need to replenish based on habits (e.g. coffee, milk, bread, eggs).
+      Do NOT suggest items already on the list.
+      Return JSON: { "items": [{ "name": "Milk", "category": "dairy" }] }.
+      Categories: produce, dairy, bakery, meat, frozen, household, other.
+      Output Language: ${language === 'he' ? 'Hebrew' : 'English'}`;
+
+      const result = await model.generateContent(prompt);
+      const text = result.response.text().replace(/```json|```/g, '').trim();
+      const response = JSON.parse(text);
+
+      if (response.items.length === 0) {
+        alert(t('no_replenishment_needed'));
+      } else {
+        setSuggestedItems(response.items.map(i => ({ ...i, checked: true })));
+        setShowSuggestionsModal(true);
+      }
+    } catch (error) {
+      console.error("Smart Replenish failed:", error);
+      alert("Failed to analyze habits.");
+    } finally {
+      setIsChefThinking(false);
+    }
+  };
+
+  const handleAddSuggestedItems = async () => {
+    const itemsToAdd = suggestedItems.filter(i => i.checked);
+    for (const item of itemsToAdd) {
+      await handleAddManualShoppingItem(item.name);
+    }
+    setShowSuggestionsModal(false);
+    setSuggestedItems([]);
+  };
+
   const handleAddItem = () => {
     if (newItemText.trim()) {
       handleAddManualShoppingItem(newItemText);
@@ -4194,7 +4279,22 @@ function App() {
                   borderBottom: '1px solid rgba(255,255,255,0.5)'
                 }}>
                   <h3 style={{ margin: 0, color: '#1a1a2e', fontSize: '20px' }}>Grocery List</h3>
-                  <button style={{ fontSize: '20px', color: '#1a1a2e', background: 'none', border: 'none' }}>⋮</button>
+                  <div style={{ display: 'flex', gap: '15px' }}>
+                    <button
+                      onClick={() => setShowChefMode(true)}
+                      style={{ fontSize: '24px', background: 'none', border: 'none', cursor: 'pointer' }}
+                      title={t('chef_mode')}
+                    >
+                      👨‍🍳
+                    </button>
+                    <button
+                      onClick={handleSmartReplenish}
+                      style={{ fontSize: '24px', background: 'none', border: 'none', cursor: 'pointer' }}
+                      title={t('smart_replenish')}
+                    >
+                      🔄
+                    </button>
+                  </div>
                 </div>
 
                 {/* Categorized Lists */}
@@ -4321,6 +4421,105 @@ function App() {
                     +
                   </button>
                 </div>
+
+                {/* Chef Mode Modal */}
+                {showChefMode && (
+                  <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', zIndex: 1000,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    backdropFilter: 'blur(5px)'
+                  }} onClick={() => setShowChefMode(false)}>
+                    <div style={{
+                      width: '90%', maxWidth: '350px', background: 'white', borderRadius: '20px', padding: '20px',
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+                    }} onClick={e => e.stopPropagation()}>
+                      <h3 style={{ marginTop: 0, textAlign: 'center' }}>{t('chef_mode')}</h3>
+                      <p style={{ textAlign: 'center', color: '#666', marginBottom: '20px' }}>{t('what_craving')}</p>
+
+                      <input
+                        type="text"
+                        value={chefInput}
+                        onChange={(e) => setChefInput(e.target.value)}
+                        placeholder={t('chef_suggest_placeholder')}
+                        style={{
+                          width: '100%', padding: '15px', borderRadius: '12px', border: '1px solid #eee',
+                          background: '#f9f9f9', fontSize: '16px', marginBottom: '20px', outline: 'none'
+                        }}
+                        autoFocus
+                      />
+
+                      <button
+                        onClick={handleChefSuggest}
+                        disabled={isChefThinking || !chefInput.trim()}
+                        style={{
+                          width: '100%', padding: '15px', borderRadius: '12px',
+                          background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+                          color: 'white', border: 'none', fontWeight: 'bold', fontSize: '16px',
+                          cursor: 'pointer', opacity: isChefThinking ? 0.7 : 1
+                        }}
+                      >
+                        {isChefThinking ? t('generating_ingredients') : 'Generate List ✨'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Suggestions Modal */}
+                {showSuggestionsModal && (
+                  <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', zIndex: 1000,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    backdropFilter: 'blur(5px)'
+                  }} onClick={() => setShowSuggestionsModal(false)}>
+                    <div style={{
+                      width: '90%', maxWidth: '350px', background: 'white', borderRadius: '20px', padding: '20px',
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.2)', maxHeight: '80vh', display: 'flex', flexDirection: 'column'
+                    }} onClick={e => e.stopPropagation()}>
+                      <h3 style={{ marginTop: 0, textAlign: 'center' }}>{t('suggested_replenishment')}</h3>
+
+                      <div style={{ overflowY: 'auto', flex: 1, marginBottom: '20px' }}>
+                        {suggestedItems.map((item, idx) => (
+                          <div key={idx} style={{
+                            display: 'flex', alignItems: 'center', padding: '10px',
+                            borderBottom: '1px solid #eee', gap: '10px'
+                          }}>
+                            <input
+                              type="checkbox"
+                              checked={item.checked}
+                              onChange={() => {
+                                const newItems = [...suggestedItems];
+                                newItems[idx].checked = !newItems[idx].checked;
+                                setSuggestedItems(newItems);
+                              }}
+                              style={{ width: '20px', height: '20px' }}
+                            />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 'bold' }}>{item.name}</div>
+                              <div style={{ fontSize: '12px', color: '#888' }}>{SHOPPING_CATEGORIES[item.category]?.label || item.category}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button
+                          onClick={() => setShowSuggestionsModal(false)}
+                          style={{ flex: 1, padding: '12px', borderRadius: '12px', background: '#f5f5f5', border: 'none', fontWeight: 'bold' }}
+                        >
+                          {t('cancel')}
+                        </button>
+                        <button
+                          onClick={handleAddSuggestedItems}
+                          style={{ flex: 1, padding: '12px', borderRadius: '12px', background: '#43a047', color: 'white', border: 'none', fontWeight: 'bold' }}
+                        >
+                          {t('add_selected_items')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )
           }

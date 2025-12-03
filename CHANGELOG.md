@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.6.1] - 2025-12-03
+### Added
+- **Food Breakdown Chart**: Visual breakdown of Healthy, Junk, and Sweet foods.
+- **Family Food Graph**: Stacked bar chart showing food consumption by family member and category.
+- **Food Categories**: Explicit "Sweet" category added to AI analysis and confirmation modal.
+
+### Changed
+- **Food Confirmation**: Updated modal to allow selecting between Healthy, Junk, and Sweet.
+
 ## [1.6.0] - 2025-12-03
 ### Added
 - **Carousel Home**: New circular navigation for Home screen with dynamic action area.

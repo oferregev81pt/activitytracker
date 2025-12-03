@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0] - 2025-12-03
+### Changed
+- **Navigation Overhaul**: Streamlined bottom navigation with Trends, Home, Shopping, and Menu.
+- **Side Menu**: New slide-out menu for quick access to Family, Profile, Goals, and System settings.
+- **Settings Pages**: Dedicated full-screen pages for each settings category.
+- **Home Tab**: Centered and emphasized in the navigation bar.
+- **Logout**: Added explicit Logout option in the side menu.
+
 ## [1.2.0] - 2025-12-02
 ### Added
 - **Settings Page**: Converted settings modal to a full page integrated with Family view.

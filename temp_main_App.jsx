@@ -26,9 +26,6 @@ const ICONS = {
   food: '🍎'
 };
 
-// Fun Chore Designs
-
-
 const COLORS = {
   pee: '#fbc02d',
   poo: '#e65100',
@@ -119,9 +116,6 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0); // For forcing re-renders on visibility change
   const [activeTab, setActiveTab] = useState('home');
-  const [showAllActivities, setShowAllActivities] = useState(true);
-
-
   // Removed localStorage persistence for activeTab to always default to Home
   const [showSettings, setShowSettings] = useState(false);
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle', 'saving', 'saved'
@@ -632,7 +626,6 @@ function App() {
   const [leaderboardRange, setLeaderboardRange] = useState('day'); // 'day', 'week', 'month', 'all'
   const [showDrinkSelection, setShowDrinkSelection] = useState(false);
   const [showFoodSelection, setShowFoodSelection] = useState(false);
-  const [homeCategory, setHomeCategory] = useState('drink');
 
   // Lock body scroll when modal is open (iOS fix)
   useEffect(() => {
@@ -645,7 +638,6 @@ function App() {
   }, [showFoodSelection]);
   const [showAllFood, setShowAllFood] = useState(false);
   const [showAllChores, setShowAllChores] = useState(false);
-  const [isAssigningMode, setIsAssigningMode] = useState(false);
   const [expandedChoreUser, setExpandedChoreUser] = useState(null);
 
   // Food Tracker State
@@ -695,7 +687,6 @@ function App() {
 
   // PWA Install Prompt State
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
-  const [showSideMenu, setShowSideMenu] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
@@ -821,19 +812,18 @@ function App() {
 
   // ... (existing handlers)
 
-  const getLeaderboardScores = (memberUid, rangeOverride = null) => {
-    const range = rangeOverride || leaderboardRange;
+  const getLeaderboardScores = (memberUid) => {
     const todayStr = getIsraelDateString();
 
     let startDateStr = '';
 
-    if (range === 'week') {
+    if (leaderboardRange === 'week') {
       const parts = todayStr.split('-');
       const d = new Date(parts[0], parts[1] - 1, parts[2]);
       const day = d.getDay(); // 0 is Sunday
       d.setDate(d.getDate() - day);
       startDateStr = getIsraelDateString(d);
-    } else if (range === 'month') {
+    } else if (leaderboardRange === 'month') {
       const parts = todayStr.split('-');
       startDateStr = `${parts[0]}-${parts[1]}-01`;
     }
@@ -844,9 +834,9 @@ function App() {
       const actDateStr = getIsraelDateString(act.timestamp);
 
       let include = false;
-      if (range === 'day') {
+      if (leaderboardRange === 'day') {
         include = actDateStr === todayStr;
-      } else if (range === 'all') {
+      } else if (leaderboardRange === 'all') {
         include = true;
       } else {
         include = actDateStr >= startDateStr;
@@ -1087,162 +1077,6 @@ function App() {
     }
   };
 
-
-
-  const renderCategoryActivity = (types, title) => {
-    const filteredActivities = activities
-      .filter(act => types.includes(act.type))
-      .filter(act => showAllActivities || act.userId === user.uid)
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-      .slice(0, 5);
-
-    return (
-      <div style={{ width: '100%', marginTop: '25px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-          <h4 style={{ margin: 0, fontSize: '14px', color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            {title || `Recent ${t(types[0]) || types[0]}`}
-          </h4>
-          <div style={{ background: '#f0f0f0', borderRadius: '15px', padding: '2px', display: 'flex' }}>
-            <button
-              onClick={() => setShowAllActivities(false)}
-              style={{
-                background: !showAllActivities ? 'white' : 'transparent',
-                color: !showAllActivities ? '#333' : '#888',
-                border: 'none', borderRadius: '12px', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold',
-                boxShadow: !showAllActivities ? '0 2px 5px rgba(0,0,0,0.1)' : 'none',
-                cursor: 'pointer'
-              }}
-            >
-              Me
-            </button>
-            <button
-              onClick={() => setShowAllActivities(true)}
-              style={{
-                background: showAllActivities ? 'white' : 'transparent',
-                color: showAllActivities ? '#333' : '#888',
-                border: 'none', borderRadius: '12px', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold',
-                boxShadow: showAllActivities ? '0 2px 5px rgba(0,0,0,0.1)' : 'none',
-                cursor: 'pointer'
-              }}
-            >
-              All
-            </button>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {filteredActivities.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '20px', color: '#aaa', fontStyle: 'italic', fontSize: '13px' }}>
-              No recent activity.
-            </div>
-          )}
-          {filteredActivities.map(act => {
-            const member = groupData?.members?.find(m => m.uid === act.userId);
-
-            let categoryTag = null;
-            if (act.type === 'food') {
-              const category = act.details?.category || (act.details?.isHealthy ? 'Healthy' : 'Junk');
-              let bg = '#f5f5f5';
-              let color = '#616161';
-              let icon = '🍴';
-
-              if (category === 'Healthy') { bg = '#e8f5e9'; color = '#2e7d32'; icon = '🌿'; }
-              else if (category === 'Junk') { bg = '#ffebee'; color = '#c62828'; icon = '🍔'; }
-              else if (category === 'Sweet') { bg = '#fce4ec'; color = '#c2185b'; icon = '🍬'; }
-              else if (category === 'Processed') { bg = '#fff3e0'; color = '#ef6c00'; icon = '🥫'; }
-
-              categoryTag = (
-                <span style={{
-                  padding: '2px 8px', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold',
-                  background: bg, color: color, marginLeft: '8px', display: 'inline-flex', alignItems: 'center', gap: '3px', verticalAlign: 'middle'
-                }}>
-                  {icon} {category}
-                </span>
-              );
-            }
-
-            return (
-              <div key={act.id} style={{ padding: '10px', background: '#f8f9fa', borderRadius: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{
-                      width: '32px', height: '32px', borderRadius: '50%', background: '#eee',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 'bold', color: '#555'
-                    }}>
-                      {member?.photoURL ? <img src={member.photoURL} alt={member.name} style={{ width: '100%', height: '100%', borderRadius: '50%' }} /> : (member?.name?.[0] || '?')}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '14px', fontWeight: '500', color: '#333' }}>
-                        {act.type === 'food' ? (
-                          <span>
-                            {act.details?.name || act.details?.items?.[0]?.name || 'Meal'}
-                            {categoryTag}
-                            <div style={{ fontSize: '12px', color: '#666', fontWeight: 'normal', marginTop: '2px' }}>
-                              {act.amount} kcal • {act.details?.protein || act.details?.totalProtein || 0}g protein
-                            </div>
-                          </span>
-                        ) : (
-                          act.details?.name || act.input || (act.amount ? `${act.amount} ${act.type === 'drink' ? 'ml' : 'pts'}` : t(act.type))
-                        )}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#888' }}>
-                        {new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {member?.name || 'Unknown'}
-                      </div>
-                    </div>
-                  </div>
-
-                  {act.userId === user.uid && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDeleteActivity(act.id); }}
-                      style={{ background: 'none', border: 'none', opacity: 0.3, cursor: 'pointer', fontSize: '12px' }}
-                    >
-                      🗑️
-                    </button>
-                  )}
-                </div>
-
-                {/* Reactions */}
-                <div style={{ display: 'flex', gap: '4px', marginTop: '5px', marginLeft: '42px' }}>
-                  {['👍', '❤️', '👎'].map(emoji => {
-                    const hasReacted = act.reactions?.[user.uid] === emoji;
-                    const reactorNames = getReactorNames(act, emoji);
-                    const count = reactorNames.length;
-
-                    return (
-                      <button
-                        key={emoji}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleReaction(act.id, hasReacted ? null : emoji);
-                        }}
-                        title={reactorNames.join(', ')}
-                        style={{
-                          background: hasReacted ? '#e3f2fd' : 'transparent',
-                          border: 'none', padding: '2px 6px', fontSize: '12px', cursor: 'pointer',
-                          opacity: hasReacted || count > 0 ? 1 : 0.4,
-                          borderRadius: '8px',
-                          display: 'flex', alignItems: 'center', gap: '3px'
-                        }}
-                      >
-                        {emoji}
-                        {count > 0 && (
-                          <span style={{ fontSize: '10px', color: '#666', fontWeight: 'bold' }}>
-                            {count}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
   const handleTrack = async (type, amount = 1, details = {}) => {
     if (!groupCode || !user) return;
     try {
@@ -1366,7 +1200,6 @@ function App() {
         "totalCalories": 100,
           "totalProtein": 5,
             "healthScore": 8, // 1-10
-            "category": "Healthy", // One of: Healthy, Junk, Sweet, Processed
             "isHealthy": true, // true for nutritious food, false for sweets/junk/processed
             "classificationReason": "Brief reason for classification",
               "feedback": "Brief feedback sentence"
@@ -1408,14 +1241,12 @@ function App() {
     try {
       const isHealthy = analyzedFoodData.data.isHealthy;
       const points = isHealthy ? 1 : -1;
-      const foodName = analyzedFoodData.data.items?.map(i => i.name).join(', ') || 'Meal';
 
       await addDoc(collection(db, 'groups', groupCode, 'activities'), {
         type: 'food',
-        amount: points, // This is actually score points, not calories. Calories are in details.
+        amount: points,
         details: encryptData({
           ...analyzedFoodData.data,
-          name: foodName,
           calories: analyzedFoodData.data.totalCalories,
           isHealthy: isHealthy
         }),
@@ -1987,12 +1818,12 @@ function App() {
       if (a.type === 'drink') actsByDate[date].drink += (a.amount || 0);
       if (a.type === 'pee') actsByDate[date].pee += (a.amount || 1);
       if (a.type === 'poo') actsByDate[date].poo += (a.amount || 1);
-      if (a.type === 'chore') actsByDate[date].chore += (a.amount || 0);
+      if (a.type === 'chore') actsByDate[date].chore += 1;
     });
 
     // Define thresholds
-    // Default goals: 10 pees, 1 poo, 1500ml water, 10 chore points
-    const thresholds = memberGoals || { pee: 10, poo: 1, drink: 1500, chore: 10 };
+    // Default goals: 10 pees, 1 poo, 1500ml water, 1 chore
+    const thresholds = memberGoals || { pee: 10, poo: 1, drink: 1500, chore: 1 };
 
     const validDates = new Set();
     Object.keys(actsByDate).forEach(date => {
@@ -2000,7 +1831,7 @@ function App() {
       if (day.pee >= (thresholds.pee || 10) &&
         day.poo >= (thresholds.poo || 1) &&
         day.drink >= (thresholds.drink || 1500) &&
-        day.chore >= (thresholds.chore || 10)) {
+        day.chore >= (thresholds.chore || 1)) {
         validDates.add(date);
       }
     });
@@ -2026,60 +1857,6 @@ function App() {
     return currentStreak;
   };
 
-  const renderSideMenu = () => (
-    <div style={{
-      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.5)', zIndex: 2000,
-      display: 'flex', justifyContent: 'flex-end'
-    }} onClick={() => setShowSideMenu(false)}>
-      <div style={{
-        width: '70%', maxWidth: '300px', height: '100%', background: 'white',
-        padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px',
-        boxShadow: '-2px 0 10px rgba(0,0,0,0.1)'
-      }} onClick={e => e.stopPropagation()}>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ margin: 0, fontSize: '24px' }}>Menu</h2>
-          <button onClick={() => setShowSideMenu(false)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>×</button>
-        </div>
-
-        {[
-          { id: 'settings_family', label: 'Family Group', icon: '👨‍👩‍👧‍👦' },
-          { id: 'settings_profile', label: 'My Profile', icon: '👤' },
-          { id: 'settings_goals', label: 'Daily Goals', icon: '🎯' },
-          { id: 'settings_whats_new', label: "What's New", icon: '🚀' },
-          { id: 'settings_system', label: 'System', icon: '⚙️' },
-          { id: 'logout', label: 'Logout', icon: '🚪', action: handleLogout, color: '#d32f2f', bg: '#ffebee' },
-        ].map(item => (
-          <button
-            key={item.id}
-            onClick={() => {
-              if (item.action) {
-                item.action();
-              } else {
-                setActiveTab(item.id);
-              }
-              setShowSideMenu(false);
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '15px', padding: '15px',
-              background: item.bg || '#f8f9fa', border: 'none', borderRadius: '12px',
-              fontSize: '16px', fontWeight: '500', color: item.color || '#333', cursor: 'pointer',
-              textAlign: 'left'
-            }}
-          >
-            <span style={{ fontSize: '20px' }}>{item.icon}</span>
-            {item.label}
-          </button>
-        ))}
-
-        <div style={{ marginTop: 'auto', textAlign: 'center', color: '#aaa', fontSize: '12px' }}>
-          v{__APP_VERSION__}
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div key={refreshKey} className="animate-fade-in" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div className="main-content">
@@ -2095,1010 +1872,984 @@ function App() {
               <span style={{ fontSize: '10px', color: '#ccc', marginLeft: '8px', opacity: 0.7 }}>v{__APP_VERSION__}</span>
             </p>
           </div>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
 
 
-
-          {/* Install Button */}
-          {!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone && (isIOS || isAndroid) && (
-            <button
-              onClick={async () => {
-                // If Android and we have the deferred prompt, trigger it immediately
-                if (isAndroid && deferredPrompt) {
-                  try {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    if (outcome === 'accepted') {
-                      console.log('User accepted the install prompt');
+            {/* Install Button */}
+            {!window.matchMedia('(display-mode: standalone)').matches && !window.navigator.standalone && (isIOS || isAndroid) && (
+              <button
+                onClick={async () => {
+                  // If Android and we have the deferred prompt, trigger it immediately
+                  if (isAndroid && deferredPrompt) {
+                    try {
+                      deferredPrompt.prompt();
+                      const { outcome } = await deferredPrompt.userChoice;
+                      if (outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                      }
+                      setDeferredPrompt(null);
+                    } catch (error) {
+                      console.error('Error showing install prompt:', error);
+                      setShowInstallPrompt(true);
                     }
-                    setDeferredPrompt(null);
-                  } catch (error) {
-                    console.error('Error showing install prompt:', error);
+                  } else {
+                    // Otherwise show instructions
                     setShowInstallPrompt(true);
                   }
-                } else {
-                  // Otherwise show instructions
-                  setShowInstallPrompt(true);
-                }
-              }}
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '20px',
+                  padding: '8px 16px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+              >
+                📱 {t('install')}
+              </button>
+            )}
+            <button
+              onClick={() => window.location.reload()}
               style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '20px',
-                padding: '8px 16px',
-                fontSize: '13px',
-                fontWeight: 'bold',
-                boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
-                cursor: 'pointer',
+                background: 'white',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px'
+                justifyContent: 'center',
+                fontSize: '18px',
+                border: '1px solid #eee'
               }}
             >
-              📱 {t('install')}
+              🔄
             </button>
-          )}
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              background: 'white',
-              borderRadius: '50%',
-              width: '40px',
-              height: '40px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '18px',
-              border: '1px solid #eee'
-            }}
-          >
-            🔄
-          </button>
-          <button
-            onClick={() => setActiveTab('family')}
-            style={{
-              background: 'white',
-              borderRadius: '50%',
-              width: '40px',
-              height: '40px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '18px',
-              border: '1px solid #eee'
-            }}
-          >
-            ⚙️
-          </button>
-        </div>
-      </div>
-
-      <div style={{ padding: '20px 0' }}>
-        {activeTab === 'health' && (
-          // ... (keep existing home tab)
-          <div>
-            {/* Health Detective Card */}
-            <div style={{
-              background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
-              borderRadius: '20px', padding: '20px', marginBottom: '20px',
-              boxShadow: '0 4px 15px rgba(33, 150, 243, 0.2)',
-              border: '1px solid #90caf9'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                <div style={{ fontSize: '24px' }}>🕵️‍♀️</div>
-                <h3 style={{ margin: 0, color: '#1565c0' }}>Health Detective</h3>
-              </div>
-
-              {healthInsight ? (
-                <div style={{ background: 'rgba(255,255,255,0.6)', padding: '15px', borderRadius: '15px', marginBottom: '15px' }}>
-                  <p style={{ margin: 0, color: '#0d47a1', fontStyle: 'italic', lineHeight: '1.5' }}>"{healthInsight}"</p>
-                </div>
-              ) : (
-                <p style={{ color: '#546e7a', marginBottom: '15px' }}>Let AI analyze your habits to find hidden patterns!</p>
-              )}
-
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  onClick={() => analyzeHealthPatterns('he')}
-                  disabled={isAnalyzingHealth}
-                  style={{
-                    flex: 1,
-                    background: isAnalyzingHealth ? '#cfd8dc' : '#1976d2',
-                    color: 'white', border: 'none', padding: '10px', borderRadius: '25px',
-                    fontWeight: 'bold', cursor: isAnalyzingHealth ? 'default' : 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontSize: '14px'
-                  }}
-                >
-                  {isAnalyzingHealth ? '...' : '🇮🇱 נתח בעברית'}
-                </button>
-                <button
-                  onClick={() => analyzeHealthPatterns('en')}
-                  disabled={isAnalyzingHealth}
-                  style={{
-                    flex: 1,
-                    background: isAnalyzingHealth ? '#cfd8dc' : '#1565c0',
-                    color: 'white', border: 'none', padding: '10px', borderRadius: '25px',
-                    fontWeight: 'bold', cursor: isAnalyzingHealth ? 'default' : 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontSize: '14px'
-                  }}
-                >
-                  {isAnalyzingHealth ? '...' : '🇺🇸 Analyze (EN)'}
-                </button>
-              </div>
-            </div>
-
-
-
-            {/* Today's Summary */}
-            <div className="card">
-              <h3 style={{ color: '#8b8b9e', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '15px' }}>Daily Summary</h3>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 10px' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '24px', marginBottom: '5px' }}>{ICONS.pee}</div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e' }}>
-                    {myStats.pee} <span style={{ fontSize: '14px', color: '#8b8b9e', fontWeight: '400' }}>/ {goals.pee || 10}</span>
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#8b8b9e' }}>Pee</div>
-                </div>
-                <div style={{ width: '1px', background: '#eee' }}></div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '24px', marginBottom: '5px' }}>{ICONS.drink}</div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e' }}>
-                    {myStats.drink} <span style={{ fontSize: '10px', color: '#8b8b9e', fontWeight: '400' }}>ml / {goals.drink || 1500} ml</span>
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#8b8b9e' }}>Drinks</div>
-                </div>
-                <div style={{ width: '1px', background: '#eee' }}></div>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '24px', marginBottom: '5px' }}>{ICONS.poo}</div>
-                  <div style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e' }}>
-                    {myStats.poo} <span style={{ fontSize: '14px', color: '#8b8b9e', fontWeight: '400' }}>/ {goals.poo || 1}</span>
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#8b8b9e' }}>Poop</div>
-                </div>
-              </div>
-
-              {/* Celebration Message */}
-              {(() => {
-                const targetPee = goals.pee || 10;
-                const targetDrink = goals.drink || 1500;
-                const targetPoo = goals.poo || 1;
-
-                const peeMet = myStats.pee >= targetPee;
-                const drinkMet = myStats.drink >= targetDrink;
-                const pooMet = myStats.poo >= targetPoo;
-
-                return peeMet && drinkMet && pooMet;
-              })() && (
-                  <div style={{
-                    marginTop: '20px',
-                    background: '#e8f5e9',
-                    color: '#2e7d32',
-                    padding: '10px',
-                    borderRadius: '12px',
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    fontSize: '14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px'
-                  }}>
-                    <span>🎉</span> Well Done! Goal Reached! <span>🎉</span>
-                  </div>
-                )}
-            </div>
-
-            {/* Drink Selection Modal */}
-            {showDrinkSelection && (
-              <div style={{
-                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                background: 'rgba(0,0,0,0.5)', zIndex: 1000,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: '20px'
-              }} onClick={() => setShowDrinkSelection(false)}>
-                <div style={{
-                  background: 'white', borderRadius: '24px', padding: '30px',
-                  width: '100%', maxWidth: '320px', textAlign: 'center',
-                  boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
-                }} onClick={e => e.stopPropagation()}>
-                  <h3 style={{ marginBottom: '20px' }}>{t('log_drink')} 💧</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                    <button
-                      onClick={() => { handleTrack('drink', 180); setShowDrinkSelection(false); }}
-                      style={{
-                        padding: '20px', borderRadius: '16px', border: '2px solid #eee',
-                        background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px'
-                      }}
-                    >
-                      <span style={{ fontSize: '32px' }}>☕</span>
-                      <span style={{ fontWeight: 'bold' }}>{t('cup')}</span>
-                      <span style={{ fontSize: '12px', color: '#888' }}>180 ml</span>
-                    </button>
-                    <button
-                      onClick={() => { handleTrack('drink', bottleSize); setShowDrinkSelection(false); }}
-                      style={{
-                        padding: '20px', borderRadius: '16px', border: '2px solid #eee',
-                        background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px'
-                      }}
-                    >
-                      <span style={{ fontSize: '32px' }}>🍾</span>
-                      <span style={{ fontWeight: 'bold' }}>{t('bottle')}</span>
-                      <span style={{ fontSize: '12px', color: '#888' }}>{bottleSize} ml</span>
-                    </button>
-                  </div>
-                  <button
-                    onClick={() => setShowDrinkSelection(false)}
-                    style={{ marginTop: '20px', padding: '10px', background: 'transparent', border: 'none', color: '#888' }}
-                  >
-                    {t('cancel')}
-                  </button>
-                </div>
-              </div>
-            )}
-
-
-
-
-            {/* Mini Leaderboard Teaser */}
-            <div className="card" onClick={() => setActiveTab('trends')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
-              <div>
-                <h3 style={{ margin: 0 }}>Family Leaderboard</h3>
-                <p>See how you rank today</p>
-              </div>
-              <span style={{ fontSize: '24px' }}>🏆</span>
-            </div>
+            <button
+              onClick={() => setActiveTab('family')}
+              style={{
+                background: 'white',
+                borderRadius: '50%',
+                width: '40px',
+                height: '40px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '18px',
+                border: '1px solid #eee'
+              }}
+            >
+              ⚙️
+            </button>
           </div>
-        )}
+        </div>
 
-
-
-
-
-
-        {activeTab === 'home' && (
-          <div className="animate-fade-in">
-            {/* Sticky Notes Widget (Fridge Style) */}
-            <div style={{
-              marginBottom: '20px',
-              background: 'linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%)', // Metallic fridge look
-              padding: '20px',
-              borderRadius: '20px',
-              border: '4px solid #d0d0d0',
-              boxShadow: 'inset 0 0 20px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.1)'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <div style={{
-                  background: '#ff5252', color: 'white', padding: '5px 15px',
-                  borderRadius: '20px', fontWeight: 'bold', fontSize: '14px',
-                  boxShadow: '0 2px 5px rgba(0,0,0,0.2)', transform: 'rotate(-2deg)'
-                }}>
-                  📌 Family Fridge
+        <div style={{ padding: '20px 0' }}>
+          {activeTab === 'health' && (
+            // ... (keep existing home tab)
+            <div>
+              {/* Health Detective Card */}
+              <div style={{
+                background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+                borderRadius: '20px', padding: '20px', marginBottom: '20px',
+                boxShadow: '0 4px 15px rgba(33, 150, 243, 0.2)',
+                border: '1px solid #90caf9'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                  <div style={{ fontSize: '24px' }}>🕵️‍♀️</div>
+                  <h3 style={{ margin: 0, color: '#1565c0' }}>Health Detective</h3>
                 </div>
-                <button
-                  onClick={() => setIsAddingNote(!isAddingNote)}
-                  style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.1))' }}
-                >
-                  {isAddingNote ? '❌' : '➕'}
-                </button>
+
+                {healthInsight ? (
+                  <div style={{ background: 'rgba(255,255,255,0.6)', padding: '15px', borderRadius: '15px', marginBottom: '15px' }}>
+                    <p style={{ margin: 0, color: '#0d47a1', fontStyle: 'italic', lineHeight: '1.5' }}>"{healthInsight}"</p>
+                  </div>
+                ) : (
+                  <p style={{ color: '#546e7a', marginBottom: '15px' }}>Let AI analyze your habits to find hidden patterns!</p>
+                )}
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => analyzeHealthPatterns('he')}
+                    disabled={isAnalyzingHealth}
+                    style={{
+                      flex: 1,
+                      background: isAnalyzingHealth ? '#cfd8dc' : '#1976d2',
+                      color: 'white', border: 'none', padding: '10px', borderRadius: '25px',
+                      fontWeight: 'bold', cursor: isAnalyzingHealth ? 'default' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontSize: '14px'
+                    }}
+                  >
+                    {isAnalyzingHealth ? '...' : '🇮🇱 נתח בעברית'}
+                  </button>
+                  <button
+                    onClick={() => analyzeHealthPatterns('en')}
+                    disabled={isAnalyzingHealth}
+                    style={{
+                      flex: 1,
+                      background: isAnalyzingHealth ? '#cfd8dc' : '#1565c0',
+                      color: 'white', border: 'none', padding: '10px', borderRadius: '25px',
+                      fontWeight: 'bold', cursor: isAnalyzingHealth ? 'default' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontSize: '14px'
+                    }}
+                  >
+                    {isAnalyzingHealth ? '...' : '🇺🇸 Analyze (EN)'}
+                  </button>
+                </div>
               </div>
 
 
 
-              {/* Sticky Notes */}
-
-
-              {isAddingNote && (
-                <div className="card" style={{ padding: '15px', marginBottom: '15px', background: '#fff', transform: 'rotate(1deg)' }}>
-                  <textarea
-                    value={newNoteText}
-                    onChange={(e) => setNewNoteText(e.target.value)}
-                    placeholder="Write a new note..."
-                    style={{
-                      width: '100%', height: '60px', border: '1px solid #ddd', borderRadius: '8px',
-                      padding: '10px', fontSize: '14px', marginBottom: '10px', resize: 'none'
-                    }}
-                  />
-                  <button
-                    onClick={handleAddNote}
-                    style={{
-                      width: '100%', padding: '10px', background: '#1a1a2e', color: 'white',
-                      border: 'none', borderRadius: '8px', fontWeight: 'bold'
-                    }}
-                  >
-                    Post Note
-                  </button>
+              {/* Today's Summary */}
+              <div className="card">
+                <h3 style={{ color: '#8b8b9e', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '15px' }}>Daily Summary</h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 10px' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', marginBottom: '5px' }}>{ICONS.pee}</div>
+                    <div style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e' }}>
+                      {myStats.pee} <span style={{ fontSize: '14px', color: '#8b8b9e', fontWeight: '400' }}>/ {goals.pee || 10}</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#8b8b9e' }}>Pee</div>
+                  </div>
+                  <div style={{ width: '1px', background: '#eee' }}></div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', marginBottom: '5px' }}>{ICONS.drink}</div>
+                    <div style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e' }}>
+                      {myStats.drink} <span style={{ fontSize: '10px', color: '#8b8b9e', fontWeight: '400' }}>ml / {goals.drink || 1500} ml</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#8b8b9e' }}>Drinks</div>
+                  </div>
+                  <div style={{ width: '1px', background: '#eee' }}></div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', marginBottom: '5px' }}>{ICONS.poo}</div>
+                    <div style={{ fontSize: '20px', fontWeight: '800', color: '#1a1a2e' }}>
+                      {myStats.poo} <span style={{ fontSize: '14px', color: '#8b8b9e', fontWeight: '400' }}>/ {goals.poo || 1}</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#8b8b9e' }}>Poop</div>
+                  </div>
                 </div>
-              )}
 
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
-                gap: '15px'
-              }}>
-                {stickyNotes.length === 0 && !isAddingNote && (
-                  <p style={{ color: '#888', fontSize: '14px', fontStyle: 'italic', gridColumn: '1/-1', textAlign: 'center', marginTop: '20px' }}>
-                    The fridge is empty! Add a note.
-                  </p>
-                )}
-                {stickyNotes.map(note => {
-                  const creator = groupData?.members?.find(m => m.uid === note.addedBy);
-                  return (
-                    <div key={note.id} className={deletingNoteId === note.id ? 'animate-trash' : ''} style={{
-                      background: note.color || '#fff9c4',
-                      padding: '25px 15px 15px 15px', // Top padding for magnet
-                      borderRadius: '2px',
-                      boxShadow: '0 4px 8px rgba(0,0,0,0.15)', // Lifted shadow
-                      transform: `rotate(${Math.random() * 6 - 3}deg)`, // More rotation
-                      position: 'relative',
-                      minHeight: '110px',
-                      display: 'flex', flexDirection: 'column'
+                {/* Celebration Message */}
+                {(() => {
+                  const targetPee = goals.pee || 10;
+                  const targetDrink = goals.drink || 1500;
+                  const targetPoo = goals.poo || 1;
+
+                  const peeMet = myStats.pee >= targetPee;
+                  const drinkMet = myStats.drink >= targetDrink;
+                  const pooMet = myStats.poo >= targetPoo;
+
+                  return peeMet && drinkMet && pooMet;
+                })() && (
+                    <div style={{
+                      marginTop: '20px',
+                      background: '#e8f5e9',
+                      color: '#2e7d32',
+                      padding: '10px',
+                      borderRadius: '12px',
+                      textAlign: 'center',
+                      fontWeight: 'bold',
+                      fontSize: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
                     }}>
-                      {/* Magnet */}
-                      <div style={{
-                        position: 'absolute', top: '-8px', left: '50%', transform: 'translateX(-50%)',
-                        width: '20px', height: '20px', borderRadius: '50%',
-                        background: 'radial-gradient(circle at 30% 30%, #ff5252, #b71c1c)',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.4)',
-                        zIndex: 2
-                      }}></div>
+                      <span>🎉</span> Well Done! Goal Reached! <span>🎉</span>
+                    </div>
+                  )}
+              </div>
 
-                      <div style={{
-                        fontFamily: 'Indie Flower, cursive, sans-serif',
-                        fontSize: '14px', color: '#333', flex: 1, whiteSpace: 'pre-wrap', lineHeight: '1.3'
-                      }}>
-                        {note.text}
-                      </div>
-
-                      {/* Creator Info */}
-                      <div style={{ fontSize: '10px', color: '#666', marginTop: '5px', fontStyle: 'italic' }}>
-                        - {creator ? creator.name : 'Unknown'}
-                      </div>
-
+              {/* Drink Selection Modal */}
+              {showDrinkSelection && (
+                <div style={{
+                  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                  background: 'rgba(0,0,0,0.5)', zIndex: 1000,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '20px'
+                }} onClick={() => setShowDrinkSelection(false)}>
+                  <div style={{
+                    background: 'white', borderRadius: '24px', padding: '30px',
+                    width: '100%', maxWidth: '320px', textAlign: 'center',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
+                  }} onClick={e => e.stopPropagation()}>
+                    <h3 style={{ marginBottom: '20px' }}>{t('log_drink')} 💧</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                       <button
-                        onClick={() => handleDeleteNote(note.id)}
+                        onClick={() => { handleTrack('drink', 180); setShowDrinkSelection(false); }}
                         style={{
-                          position: 'absolute', bottom: '5px', right: '5px',
-                          background: 'none', border: 'none', fontSize: '10px',
-                          cursor: 'pointer', opacity: 0.4, color: '#000'
+                          padding: '20px', borderRadius: '16px', border: '2px solid #eee',
+                          background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px'
                         }}
                       >
-                        🗑️
+                        <span style={{ fontSize: '32px' }}>☕</span>
+                        <span style={{ fontWeight: 'bold' }}>{t('cup')}</span>
+                        <span style={{ fontSize: '12px', color: '#888' }}>180 ml</span>
+                      </button>
+                      <button
+                        onClick={() => { handleTrack('drink', bottleSize); setShowDrinkSelection(false); }}
+                        style={{
+                          padding: '20px', borderRadius: '16px', border: '2px solid #eee',
+                          background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px'
+                        }}
+                      >
+                        <span style={{ fontSize: '32px' }}>🍾</span>
+                        <span style={{ fontWeight: 'bold' }}>{t('bottle')}</span>
+                        <span style={{ fontSize: '12px', color: '#888' }}>{bottleSize} ml</span>
                       </button>
                     </div>
-                  );
-                })}
-              </div>
+                    <button
+                      onClick={() => setShowDrinkSelection(false)}
+                      style={{ marginTop: '20px', padding: '10px', background: 'transparent', border: 'none', color: '#888' }}
+                    >
+                      {t('cancel')}
+                    </button>
+                  </div>
+                </div>
+              )}
 
-            </div>
+              {/* Food Selection Modal */}
+              {showFoodSelection && (
+                <div style={{
+                  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                  background: 'rgba(0,0,0,0.5)', zIndex: 3000,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '20px'
+                }}>
+                  <div className="card" style={{ width: '100%', maxWidth: '350px', textAlign: 'center' }}>
+                    <h3>{t('what_did_you_eat')}</h3>
 
+                    <textarea
+                      value={foodInput}
+                      onChange={(e) => setFoodInput(e.target.value)}
+                      placeholder="e.g., Apple, Pizza, Salad..."
+                      style={{
+                        width: '100%', height: '80px', padding: '10px', borderRadius: '10px',
+                        border: '1px solid #ddd', marginBottom: '20px', fontSize: '16px', resize: 'none'
+                      }}
+                    />
 
-            {/* Carousel / Arc Menu */}
-            <div style={{ position: 'relative', height: '320px', display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '20px', marginBottom: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                      <button
+                        onClick={() => {
+                          handleTrack('food', 1, { isHealthy: true, name: foodInput || 'Healthy Food' });
+                          setShowFoodSelection(false);
+                          setFoodInput('');
+                        }}
+                        style={{
+                          background: '#e8f5e9', padding: '20px', borderRadius: '15px',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px'
+                        }}
+                      >
+                        <span style={{ fontSize: '32px' }}>🥗</span>
+                        <span style={{ fontWeight: 'bold', color: '#2e7d32' }}>Healthy</span>
+                        <span style={{ fontSize: '12px', color: '#666' }}>+1 Point</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleTrack('food', -1, { isHealthy: false, name: foodInput || 'Sweet/Junk' });
+                          setShowFoodSelection(false);
+                          setFoodInput('');
+                        }}
+                        style={{
+                          background: '#ffebee', padding: '20px', borderRadius: '15px',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px'
+                        }}
+                      >
+                        <span style={{ fontSize: '32px' }}>🍬</span>
+                        <span style={{ fontWeight: 'bold', color: '#c62828' }}>Sweet/Junk</span>
+                        <span style={{ fontSize: '12px', color: '#666' }}>-1 Point</span>
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setShowFoodSelection(false)}
+                      style={{ marginTop: '20px', padding: '10px', background: 'transparent', border: 'none', color: '#888' }}
+                    >
+                      {t('cancel')}
+                    </button>
+                  </div>
+                </div>
+              )}
 
-              {/* Central Progress Donut */}
-              <div style={{ width: '140px', height: '140px', position: 'relative', zIndex: 10 }}>
-                {(() => {
-                  const targetPee = Number(goals.pee) || 10;
-                  const targetPoo = Number(goals.poo) || 1;
-                  const targetDrink = Number(goals.drink) || 1500;
-
-                  const peeProgress = Math.min(myStats.pee / targetPee, 1);
-                  const pooProgress = Math.min(myStats.poo / targetPoo, 1);
-                  const drinkProgress = Math.min(myStats.drink / targetDrink, 1);
-
-                  const totalProgress = peeProgress + pooProgress + drinkProgress;
-                  const remaining = Math.max(0, 3 - totalProgress);
-                  const percentage = Math.round((totalProgress / 3) * 100);
-
-                  const data = [
-                    { name: 'Pee', value: peeProgress },
-                    { name: 'Poo', value: pooProgress },
-                    { name: 'Drink', value: drinkProgress },
-                    { name: 'Remaining', value: remaining }
-                  ];
-
-                  return (
-                    <>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={data}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={45}
-                            outerRadius={60}
-                            startAngle={90}
-                            endAngle={-270}
-                            dataKey="value"
-                            stroke="none"
-                          >
-                            <Cell key="cell-pee" fill={COLORS.pee} />
-                            <Cell key="cell-poo" fill={COLORS.poo} />
-                            <Cell key="cell-drink" fill={COLORS.drink} />
-                            <Cell key="cell-rem" fill="#f0f0f0" />
-                          </Pie>
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div style={{
-                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+              {/* Action Buttons */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+                {['pee', 'drink', 'poo', 'food'].map((type) => (
+                  <div key={type} style={{ position: 'relative' }}>
+                    <button
+                      onClick={() => {
+                        if (type === 'drink') setShowDrinkSelection(true);
+                        else if (type === 'food') setActiveTab('food');
+                        else handleTrack(type);
+                      }}
+                      style={{
+                        background: `linear-gradient(135deg, ${COLORS[type]}, ${COLORS[type]}dd)`,
+                        borderRadius: '24px',
+                        padding: '20px 10px',
+                        display: 'flex',
                         flexDirection: 'column',
-                        pointerEvents: 'none'
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '10px',
+                        boxShadow: '0 10px 20px -5px rgba(0,0,0,0.15)',
+                        position: 'relative',
+                        height: '140px',
+                        width: '100%'
+                      }}
+                    >
+                      <div style={{
+                        position: 'absolute', top: '10px', right: '10px',
+                        background: 'white', borderRadius: '50%', width: 'auto', minWidth: '24px', height: '24px', padding: '0 5px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '10px', fontWeight: 'bold', color: '#333'
                       }}>
-                        <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1a1a2e' }}>{percentage}%</div>
-                        <div style={{ fontSize: '12px', color: '#888' }}>Daily Goal</div>
+                        {type === 'drink' ? `${myStats[type]}ml` : myStats[type]}
                       </div>
-                    </>
-                  );
-                })()}
+                      <span style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>{ICONS[type]}</span>
+                      <span style={{ color: 'white', fontWeight: '700', fontSize: '16px', textTransform: 'capitalize' }}>
+                        {type === 'poo' ? 'Poop' : type}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => handleUndo(type)}
+                      style={{
+                        position: 'absolute', bottom: '-10px', right: '10px',
+                        background: 'white', borderRadius: '50%', width: '24px', height: '24px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '10px', fontWeight: 'bold', color: '#d32f2f',
+                        border: '1px solid #eee', boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                      }}
+                      title={t('undo')}
+                    >
+                      ↩️
+                    </button>
+                  </div>
+                ))}
               </div>
 
-              {/* Orbiting Icons */}
-              {(() => {
-                const baseAngles = {
-                  pee: 180,
-                  poo: 225,
-                  drink: 270,
-                  food: 315,
-                  chore: 0
-                };
+              {/* Recent Activity */}
+              <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '18px', marginBottom: '15px' }}>{t('recent_activity')}</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {activities
+                    .filter(act => ['pee', 'drink', 'poo'].includes(act.type))
+                    .slice(0, 3)
+                    .map(act => (
+                      <div key={act.id} className="card" style={{ padding: '15px', display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '0' }}>
+                        <span style={{ fontSize: '24px' }}>{ICONS[act.type]}</span>
+                        <div>
+                          <p style={{ fontSize: '14px', margin: 0, color: '#1a1a2e', fontWeight: '600' }}>
+                            {act.userName}
+                          </p>
+                          <p style={{ fontSize: '12px', margin: 0, color: '#8b8b9e' }}>
+                            {act.type === 'drink' && act.amount ? `${act.amount}ml • ` : ''}
+                            {new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
 
-                const targetAngle = 270;
-                const selectedAngle = baseAngles[homeCategory];
-                let rotation = targetAngle - selectedAngle;
+              {/* Mini Leaderboard Teaser */}
+              <div className="card" onClick={() => setActiveTab('leaderboard')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}>
+                <div>
+                  <h3 style={{ margin: 0 }}>Family Leaderboard</h3>
+                  <p>See how you rank today</p>
+                </div>
+                <span style={{ fontSize: '24px' }}>🏆</span>
+              </div>
+            </div>
+          )}
 
-                return (
+
+
+
+
+
+          {activeTab === 'home' && (
+            <div className="animate-fade-in">
+              {/* Sticky Notes Widget (Fridge Style) */}
+              <div style={{
+                marginBottom: '20px',
+                background: 'linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%)', // Metallic fridge look
+                padding: '20px',
+                borderRadius: '20px',
+                border: '4px solid #d0d0d0',
+                boxShadow: 'inset 0 0 20px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.1)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                   <div style={{
-                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                    pointerEvents: 'none',
-                    transition: 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                    transform: `rotate(${rotation}deg)`
+                    background: '#ff5252', color: 'white', padding: '5px 15px',
+                    borderRadius: '20px', fontWeight: 'bold', fontSize: '14px',
+                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)', transform: 'rotate(-2deg)'
                   }}>
-                    {['pee', 'poo', 'drink', 'food', 'chore'].map((type) => {
-                      const angleRad = (baseAngles[type] * Math.PI) / 180;
-                      const radius = 110;
-                      const x = radius * Math.cos(angleRad);
-                      const y = radius * Math.sin(angleRad);
-                      const isSelected = homeCategory === type;
+                    📌 Family Fridge
+                  </div>
+                  <button
+                    onClick={() => setIsAddingNote(!isAddingNote)}
+                    style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.1))' }}
+                  >
+                    {isAddingNote ? '❌' : '➕'}
+                  </button>
+                </div>
 
-                      return (
+                {isAddingNote && (
+                  <div className="card" style={{ padding: '15px', marginBottom: '15px', background: '#fff', transform: 'rotate(1deg)' }}>
+                    <textarea
+                      value={newNoteText}
+                      onChange={(e) => setNewNoteText(e.target.value)}
+                      placeholder="Write a new note..."
+                      style={{
+                        width: '100%', height: '60px', border: '1px solid #ddd', borderRadius: '8px',
+                        padding: '10px', fontSize: '14px', marginBottom: '10px', resize: 'none'
+                      }}
+                    />
+                    <button
+                      onClick={handleAddNote}
+                      style={{
+                        width: '100%', padding: '10px', background: '#1a1a2e', color: 'white',
+                        border: 'none', borderRadius: '8px', fontWeight: 'bold'
+                      }}
+                    >
+                      Post Note
+                    </button>
+                  </div>
+                )}
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+                  gap: '15px'
+                }}>
+                  {stickyNotes.length === 0 && !isAddingNote && (
+                    <p style={{ color: '#888', fontSize: '14px', fontStyle: 'italic', gridColumn: '1/-1', textAlign: 'center', marginTop: '20px' }}>
+                      The fridge is empty! Add a note.
+                    </p>
+                  )}
+                  {stickyNotes.map(note => {
+                    const creator = groupData?.members?.find(m => m.uid === note.addedBy);
+                    return (
+                      <div key={note.id} className={deletingNoteId === note.id ? 'animate-trash' : ''} style={{
+                        background: note.color || '#fff9c4',
+                        padding: '25px 15px 15px 15px', // Top padding for magnet
+                        borderRadius: '2px',
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.15)', // Lifted shadow
+                        transform: `rotate(${Math.random() * 6 - 3}deg)`, // More rotation
+                        position: 'relative',
+                        minHeight: '110px',
+                        display: 'flex', flexDirection: 'column'
+                      }}>
+                        {/* Magnet */}
+                        <div style={{
+                          position: 'absolute', top: '-8px', left: '50%', transform: 'translateX(-50%)',
+                          width: '20px', height: '20px', borderRadius: '50%',
+                          background: 'radial-gradient(circle at 30% 30%, #ff5252, #b71c1c)',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.4)',
+                          zIndex: 2
+                        }}></div>
+
+                        <div style={{
+                          fontFamily: 'Indie Flower, cursive, sans-serif',
+                          fontSize: '14px', color: '#333', flex: 1, whiteSpace: 'pre-wrap', lineHeight: '1.3'
+                        }}>
+                          {note.text}
+                        </div>
+
+                        {/* Creator Info */}
+                        <div style={{ fontSize: '10px', color: '#666', marginTop: '5px', fontStyle: 'italic' }}>
+                          - {creator ? creator.name : 'Unknown'}
+                        </div>
+
                         <button
-                          key={type}
-                          onClick={() => setHomeCategory(type)}
+                          onClick={() => handleDeleteNote(note.id)}
                           style={{
-                            position: 'absolute',
-                            left: `calc(50% + ${x}px)`,
-                            top: `calc(50% + ${y}px)`,
-                            transform: `translate(-50%, -50%) rotate(${-rotation}deg)`,
-                            width: isSelected ? '64px' : '50px',
-                            height: isSelected ? '64px' : '50px',
-                            borderRadius: '50%',
-                            background: isSelected ? COLORS[type] : 'white',
-                            border: isSelected ? `4px solid white` : `2px solid ${COLORS[type]}`,
-                            boxShadow: isSelected ? `0 8px 20px ${COLORS[type]}66` : '0 4px 10px rgba(0,0,0,0.1)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: isSelected ? '28px' : '22px',
-                            transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                            zIndex: isSelected ? 30 : 20,
-                            cursor: 'pointer',
-                            pointerEvents: 'auto'
+                            position: 'absolute', bottom: '5px', right: '5px',
+                            background: 'none', border: 'none', fontSize: '10px',
+                            cursor: 'pointer', opacity: 0.4, color: '#000'
                           }}
                         >
-                          {ICONS[type]}
+                          🗑️
                         </button>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-            </div>
-
-            {/* Weekly Streak Row */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', padding: '10px', background: '#f8f9fa', borderRadius: '15px' }}>
-              {(() => {
-                const days = [];
-                for (let i = 6; i >= 0; i--) {
-                  const d = new Date();
-                  d.setDate(d.getDate() - i);
-                  const dateStr = getIsraelDateString(d);
-                  const dayName = d.toLocaleDateString('en-US', { weekday: 'narrow' });
-
-                  const dayActs = activities.filter(a => getIsraelDateString(a.timestamp) === dateStr && a.userId === user.uid);
-                  const stats = {
-                    pee: dayActs.filter(a => a.type === 'pee').length,
-                    poo: dayActs.filter(a => a.type === 'poo').length,
-                    drink: dayActs.filter(a => a.type === 'drink').reduce((sum, a) => sum + a.amount, 0),
-                    chore: dayActs.filter(a => a.type === 'chore').length
-                  };
-
-                  const targetPee = Number(goals.pee) || 10;
-                  const targetPoo = Number(goals.poo) || 1;
-                  const targetDrink = Number(goals.drink) || 1500;
-                  const targetChore = Number(goals.chore) || 10;
-
-                  const peePct = Math.min(stats.pee / targetPee, 1);
-                  const pooPct = Math.min(stats.poo / targetPoo, 1);
-                  const drinkPct = Math.min(stats.drink / targetDrink, 1);
-                  const chorePct = Math.min(stats.chore / targetChore, 1);
-
-                  const totalPct = (peePct + pooPct + drinkPct + chorePct) / 4;
-                  const isToday = i === 0;
-
-                  days.push(
-                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
-                      <span style={{ fontSize: '10px', fontWeight: isToday ? 'bold' : 'normal', color: isToday ? '#1a1a2e' : '#888' }}>{dayName}</span>
-                      <div style={{ position: 'relative', width: '30px', height: '30px' }}>
-                        <svg width="30" height="30" viewBox="0 0 36 36">
-                          <path
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            stroke="#eee"
-                            strokeWidth="4"
-                          />
-                          <path
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            stroke={totalPct >= 1 ? '#4caf50' : '#ffa726'}
-                            strokeWidth="4"
-                            strokeDasharray={`${totalPct * 100}, 100`}
-                            className="animate-fade-in"
-                          />
-                        </svg>
-                        {totalPct >= 1 && (
-                          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '12px' }}>✅</div>
-                        )}
                       </div>
-                    </div>
-                  );
-                }
-                return days;
-              })()}
-            </div>
-
-            {/* Dynamic Action Area */}
-            <div className="card" style={{ padding: '25px', minHeight: '220px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', transition: 'all 0.3s ease' }}>
-
-              {/* Header for Action Area */}
-              <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ margin: 0, textTransform: 'capitalize', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  {ICONS[homeCategory]} {t(homeCategory) || homeCategory}
-                </h3>
-                <div style={{ fontSize: '14px', color: '#888' }}>
-                  {homeCategory === 'drink' && `${myStats.drink} / ${goals.drink || 1500} ml`}
-                  {homeCategory === 'pee' && `${myStats.pee} / ${goals.pee || 10} times`}
-                  {homeCategory === 'poo' && `${myStats.poo} / ${goals.poo || 1} times`}
-                  {homeCategory === 'food' && `${myStats.calories || 0} kcal`}
-                  {homeCategory === 'chore' && `${myStats.chore} / ${goals.chore || 10} pts`}
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Content based on Category */}
-              {homeCategory === 'drink' && (
-                <div style={{ display: 'flex', gap: '15px', width: '100%' }}>
-                  <button
-                    onClick={() => handleTrack('drink', 180)}
-                    style={{ flex: 1, padding: '20px', borderRadius: '16px', background: '#e1f5fe', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}
-                  >
-                    <span style={{ fontSize: '32px' }}>🥛</span>
-                    <span style={{ fontWeight: 'bold' }}>Cup</span>
-                    <span style={{ fontSize: '12px', color: '#666' }}>180 ml</span>
-                  </button>
-                  <button
-                    onClick={() => handleTrack('drink', bottleSize)}
-                    style={{ flex: 1, padding: '20px', borderRadius: '16px', background: '#e3f2fd', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}
-                  >
-                    <span style={{ fontSize: '32px' }}>🍾</span>
-                    <span style={{ fontWeight: 'bold' }}>Bottle</span>
-                    <span style={{ fontSize: '12px', color: '#666' }}>{bottleSize} ml</span>
-                  </button>
+              {/* Daily Progress Donut */}
+              <div className="card" style={{ padding: '15px 20px', marginBottom: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <div>
+                    <h3 style={{ margin: 0 }}>{translations[language].daily_goals}</h3>
+                    <p style={{ margin: 0, fontSize: '12px', color: '#888' }}>{translations[language].keep_it_up}</p>
+                  </div>
                 </div>
-              )}
 
-              {(homeCategory === 'pee' || homeCategory === 'poo') && (
-                <button
-                  onClick={() => handleTrack(homeCategory)}
-                  style={{
-                    width: '100%', padding: '20px', borderRadius: '20px',
-                    background: `linear-gradient(135deg, ${COLORS[homeCategory]}, ${COLORS[homeCategory]}dd)`,
-                    color: 'white', border: 'none', fontSize: '20px', fontWeight: 'bold',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px',
-                    boxShadow: `0 10px 20px ${COLORS[homeCategory]}44`
-                  }}
-                >
-                  <span style={{ fontSize: '32px', background: 'rgba(255,255,255,0.2)', borderRadius: '50%', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {ICONS[homeCategory]}
-                  </span>
-                  <span>Log {t(homeCategory)}</span>
-                </button>
-              )}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                  <div style={{ width: '80px', height: '80px', position: 'relative', minWidth: 0 }}>
+                    {(() => {
+                      const targetPee = Number(goals.pee) || 10;
+                      const targetPoo = Number(goals.poo) || 1;
+                      const targetDrink = Number(goals.drink) || 1500;
 
-              {homeCategory === 'food' && (
-                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                      const peeProgress = Math.min(myStats.pee / targetPee, 1);
+                      const pooProgress = Math.min(myStats.poo / targetPoo, 1);
+                      const drinkProgress = Math.min(myStats.drink / targetDrink, 1);
 
-                  {/* Add Meal Button */}
-                  <button
-                    onClick={() => setShowFoodSelection(true)}
-                    style={{
-                      width: '100%', padding: '20px', borderRadius: '20px',
-                      background: 'linear-gradient(135deg, #43a047 0%, #66bb6a 100%)',
-                      color: 'white', border: 'none',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                      boxShadow: '0 10px 20px rgba(67, 160, 71, 0.3)',
-                      marginBottom: '10px', cursor: 'pointer'
-                    }}
-                  >
-                    <span style={{ fontSize: '24px', fontWeight: 'bold' }}>+</span>
-                    <span style={{ fontSize: '18px', fontWeight: 'bold' }}>{t('add_meal')}</span>
-                  </button>
+                      const totalProgress = peeProgress + pooProgress + drinkProgress;
+                      const remaining = Math.max(0, 3 - totalProgress);
+                      const percentage = Math.round((totalProgress / 3) * 100);
 
-                  {/* Daily Targets */}
-                  <div style={{ marginBottom: '10px', padding: '15px', background: '#fff', borderRadius: '12px', border: '1px solid #eee', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-                    <h4 style={{ fontSize: '14px', color: '#666', marginBottom: '15px' }}>Daily Targets {currentUserWeight ? `(${currentUserWeight}kg)` : '(Default)'}</h4>
+                      const data = [
+                        { name: 'Pee', value: peeProgress },
+                        { name: 'Poo', value: pooProgress },
+                        { name: 'Drink', value: drinkProgress },
+                        { name: 'Remaining', value: remaining }
+                      ];
 
-                    <div style={{ marginBottom: '15px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '5px', fontWeight: '500' }}>
+                      return (
+                        <>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={data}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={25}
+                                outerRadius={35}
+                                startAngle={90}
+                                endAngle={-270}
+                                dataKey="value"
+                              >
+                                <Cell key="cell-pee" fill={COLORS.pee} />
+                                <Cell key="cell-poo" fill={COLORS.poo} />
+                                <Cell key="cell-drink" fill={COLORS.drink} />
+                                <Cell key="cell-rem" fill="#f0f0f0" />
+                              </Pie>
+                              <Tooltip
+                                formatter={(value, name) => [name === 'Remaining' ? '' : `${Math.round(value * 100)}%`, name]}
+                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', fontSize: '12px' }}
+                              />
+                            </PieChart>
+                          </ResponsiveContainer>
+                          <div style={{
+                            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '12px', fontWeight: 'bold', color: '#1a1a2e',
+                            pointerEvents: 'none'
+                          }}>
+                            {percentage}%
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {/* Weekly Streak Row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', padding: '10px', background: '#f8f9fa', borderRadius: '15px' }}>
+                  {(() => {
+                    const days = [];
+                    for (let i = 6; i >= 0; i--) {
+                      const d = new Date();
+                      d.setDate(d.getDate() - i);
+                      const dateStr = getIsraelDateString(d);
+                      const dayName = d.toLocaleDateString('en-US', { weekday: 'narrow' });
+
+                      const dayActs = activities.filter(a => getIsraelDateString(a.timestamp) === dateStr && a.userId === user.uid);
+                      const stats = {
+                        pee: dayActs.filter(a => a.type === 'pee').length,
+                        poo: dayActs.filter(a => a.type === 'poo').length,
+                        drink: dayActs.filter(a => a.type === 'drink').reduce((sum, a) => sum + a.amount, 0)
+                      };
+
+                      const targetPee = Number(goals.pee) || 10;
+                      const targetPoo = Number(goals.poo) || 1;
+                      const targetDrink = Number(goals.drink) || 1500;
+
+                      const peePct = Math.min(stats.pee / targetPee, 1);
+                      const pooPct = Math.min(stats.poo / targetPoo, 1);
+                      const drinkPct = Math.min(stats.drink / targetDrink, 1);
+
+                      const totalPct = (peePct + pooPct + drinkPct) / 3;
+                      const isToday = i === 0;
+
+                      days.push(
+                        <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: isToday ? 'bold' : 'normal', color: isToday ? '#1a1a2e' : '#888' }}>{dayName}</span>
+                          <div style={{ position: 'relative', width: '30px', height: '30px' }}>
+                            <svg width="30" height="30" viewBox="0 0 36 36">
+                              <path
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                stroke="#eee"
+                                strokeWidth="4"
+                              />
+                              <path
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                stroke={totalPct >= 1 ? '#4caf50' : '#ffa726'}
+                                strokeWidth="4"
+                                strokeDasharray={`${totalPct * 100}, 100`}
+                                className="animate-fade-in"
+                              />
+                            </svg>
+                            {totalPct >= 1 && (
+                              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '12px' }}>✅</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return days;
+                  })()}
+                </div>
+              </div>
+
+              {/* Health Summary Card */}
+              <div className="card" onClick={() => setActiveTab('health')} style={{ cursor: 'pointer', marginBottom: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <h3 style={{ margin: 0, fontSize: '16px' }}>Health ❤️</h3>
+                  <span style={{ fontSize: '12px', color: '#888' }}>View Details &gt;</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '20px' }}>{ICONS.pee}</div>
+                    <div style={{ fontWeight: 'bold' }}>{myStats.pee}</div>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '20px' }}>{ICONS.drink}</div>
+                    <div style={{ fontWeight: 'bold' }}>{myStats.drink}ml</div>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '20px' }}>{ICONS.poo}</div>
+                    <div style={{ fontWeight: 'bold' }}>{myStats.poo}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chores Summary Card */}
+              <div className="card" onClick={() => setActiveTab('chores')} style={{ cursor: 'pointer', marginBottom: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <h3 style={{ margin: 0, fontSize: '16px' }}>Chores 🧹</h3>
+                  <div style={{ display: 'flex', background: '#f0f0f0', borderRadius: '15px', padding: '2px' }} onClick={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => setShowAllChores(false)}
+                      style={{
+                        background: !showAllChores ? 'white' : 'transparent',
+                        color: !showAllChores ? '#333' : '#888',
+                        border: 'none', borderRadius: '12px', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold',
+                        boxShadow: !showAllChores ? '0 2px 5px rgba(0,0,0,0.1)' : 'none'
+                      }}
+                    >
+                      Me
+                    </button>
+                    <button
+                      onClick={() => setShowAllChores(true)}
+                      style={{
+                        background: showAllChores ? 'white' : 'transparent',
+                        color: showAllChores ? '#333' : '#888',
+                        border: 'none', borderRadius: '12px', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold',
+                        boxShadow: showAllChores ? '0 2px 5px rgba(0,0,0,0.1)' : 'none'
+                      }}
+                    >
+                      All
+                    </button>
+                  </div>
+                </div>
+
+                {/* My Points (Only show for Me) */}
+                {!showAllChores && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid #eee' }}>
+                    <div style={{
+                      width: '50px', height: '50px', borderRadius: '12px',
+                      background: `${COLORS.chore}20`, display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', fontSize: '24px'
+                    }}>
+                      {ICONS.chore}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '14px', color: '#666' }}>Your Points Today</div>
+                      <div style={{ fontSize: '24px', fontWeight: '800', color: '#1a1a2e' }}>
+                        {myStats.chore || 0}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Family Leaderboard (Always Visible) */}
+                <div>
+                  <p style={{ fontSize: '12px', color: '#888', marginBottom: '8px', fontWeight: '600' }}>Family Chore Scores:</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {groupData?.members?.map(member => {
+                      const scores = getLeaderboardScores(member.uid);
+                      return { ...member, choreScore: scores.chore };
+                    })
+                      .sort((a, b) => b.choreScore - a.choreScore)
+                      .map((member, index) => {
+                        const isExpanded = expandedChoreUser === member.uid;
+                        const memberChores = activities.filter(act => act.type === 'chore' && act.userId === member.uid && getIsraelDateString(act.timestamp) === getIsraelDateString());
+
+                        return (
+                          <div key={member.uid} style={{ background: isExpanded ? '#f9f9f9' : 'transparent', borderRadius: '12px', padding: isExpanded ? '10px' : '0' }}>
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpandedChoreUser(isExpanded ? null : member.uid);
+                              }}
+                              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', padding: '5px 0', cursor: 'pointer' }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ color: '#999', width: '15px' }}>#{index + 1}</span>
+                                <span style={{ fontWeight: member.uid === user?.uid ? '700' : '400' }}>
+                                  {member.name} {member.uid === user?.uid && '(You)'}
+                                </span>
+                                {memberChores.length > 0 && <span style={{ fontSize: '10px', color: '#888' }}>({memberChores.length})</span>}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span style={{ fontWeight: '600', color: COLORS.chore }}>{member.choreScore} pts</span>
+                                <span style={{ fontSize: '10px', color: '#ccc' }}>{isExpanded ? '▲' : '▼'}</span>
+                              </div>
+                            </div>
+
+                            {isExpanded && (
+                              <div style={{ marginTop: '5px', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {memberChores.length > 0 ? (
+                                  memberChores.map(act => {
+                                    const choreInfo = chores.find(c => c.points === act.amount);
+                                    return (
+                                      <div key={act.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '6px 10px', borderRadius: '8px', border: '1px solid #eee' }}>
+                                        <span style={{ fontSize: '12px', color: '#333' }}>
+                                          {act.details?.name || choreInfo?.name || `${act.amount} pts`}
+                                        </span>
+                                        <div style={{ display: 'flex', gap: '4px' }} onClick={e => e.stopPropagation()}>
+                                          {['👍', '❤️', '👎'].map(emoji => {
+                                            const hasReacted = act.reactions?.[user.uid] === emoji;
+                                            const reactorNames = getReactorNames(act, emoji);
+                                            const count = reactorNames.length;
+
+                                            return (
+                                              <button
+                                                key={emoji}
+                                                onClick={(e) => {
+                                                  e.preventDefault();
+                                                  e.stopPropagation();
+                                                  handleReaction(act.id, hasReacted ? null : emoji);
+                                                }}
+                                                title={reactorNames.join(', ')}
+                                                style={{
+                                                  background: hasReacted ? '#e3f2fd' : 'transparent',
+                                                  border: 'none', padding: '2px', fontSize: '12px', cursor: 'pointer',
+                                                  opacity: hasReacted ? 1 : 0.4,
+                                                  minWidth: '20px',
+                                                  display: 'flex', alignItems: 'center', gap: '2px'
+                                                }}
+                                              >
+                                                {emoji}
+                                                {count > 0 && (
+                                                  <span style={{ fontSize: '9px', color: '#666' }}>
+                                                    {count}
+                                                  </span>
+                                                )}
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                ) : (
+                                  <div style={{ fontSize: '11px', color: '#999', fontStyle: 'italic' }}>No chores today</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    }
+                  </div>
+                </div>
+              </div>
+
+              {/* Food Summary Card */}
+              <div className="card" onClick={() => setActiveTab('food')} style={{ cursor: 'pointer', marginBottom: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <h3 style={{ margin: 0, fontSize: '16px' }}>Food 🍎</h3>
+                  <div style={{ display: 'flex', background: '#f0f0f0', borderRadius: '15px', padding: '2px' }} onClick={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => setShowAllFood(false)}
+                      style={{
+                        background: !showAllFood ? 'white' : 'transparent',
+                        color: !showAllFood ? '#333' : '#888',
+                        border: 'none', borderRadius: '12px', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold',
+                        boxShadow: !showAllFood ? '0 2px 5px rgba(0,0,0,0.1)' : 'none'
+                      }}
+                    >
+                      Me
+                    </button>
+                    <button
+                      onClick={() => setShowAllFood(true)}
+                      style={{
+                        background: showAllFood ? 'white' : 'transparent',
+                        color: showAllFood ? '#333' : '#888',
+                        border: 'none', borderRadius: '12px', padding: '4px 10px', fontSize: '12px', fontWeight: 'bold',
+                        boxShadow: showAllFood ? '0 2px 5px rgba(0,0,0,0.1)' : 'none'
+                      }}
+                    >
+                      All
+                    </button>
+                  </div>
+                </div>
+
+                {/* Progress Bars (Only show for Me) */}
+                {!showAllFood && (
+                  <div style={{ marginBottom: '15px' }}>
+                    <div style={{ marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
                         <span>Calories</span>
                         <span>{myStats.calories} / {dailyCaloriesTarget}</span>
                       </div>
-                      <div style={{ height: '12px', background: '#f5f5f5', borderRadius: '6px', overflow: 'hidden' }}>
+                      <div style={{ height: '8px', background: '#eee', borderRadius: '4px', overflow: 'hidden' }}>
                         <div style={{
                           height: '100%',
                           width: `${Math.min((myStats.calories / dailyCaloriesTarget) * 100, 100)}%`,
-                          background: 'linear-gradient(90deg, #ff8a65, #ff7043)', borderRadius: '6px',
-                          transition: 'width 0.5s ease-out'
+                          background: '#ff7043', borderRadius: '4px'
                         }} />
                       </div>
-                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px', textAlign: 'right' }}>
-                        {Math.max(0, dailyCaloriesTarget - myStats.calories)} remaining
-                      </div>
                     </div>
-
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '5px', fontWeight: '500' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
                         <span>Protein</span>
                         <span>{myStats.protein}g / {dailyProteinTarget}g</span>
                       </div>
-                      <div style={{ height: '12px', background: '#f5f5f5', borderRadius: '6px', overflow: 'hidden' }}>
+                      <div style={{ height: '8px', background: '#eee', borderRadius: '4px', overflow: 'hidden' }}>
                         <div style={{
                           height: '100%',
                           width: `${Math.min((myStats.protein / dailyProteinTarget) * 100, 100)}%`,
-                          background: 'linear-gradient(90deg, #64b5f6, #42a5f5)', borderRadius: '6px',
-                          transition: 'width 0.5s ease-out'
+                          background: '#42a5f5', borderRadius: '4px'
                         }} />
                       </div>
-                      <div style={{ fontSize: '11px', color: '#888', marginTop: '2px', textAlign: 'right' }}>
-                        {Math.max(0, dailyProteinTarget - myStats.protein)}g remaining
-                      </div>
                     </div>
                   </div>
+                )}
 
-                  {/* Food Trends Chart */}
-                  <div style={{ marginBottom: '10px', padding: '10px', background: '#fff', borderRadius: '12px', border: '1px solid #eee' }}>
-                    <h4 style={{ fontSize: '14px', color: '#666', marginBottom: '10px' }}>{t('last_7_days')}</h4>
-                    <div style={{ height: '200px', width: '100%', fontSize: '10px', minWidth: 0 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={foodTrendData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                          <XAxis dataKey="name" axisLine={false} tickLine={false} dy={5} />
-                          <YAxis yAxisId="left" axisLine={false} tickLine={false} />
-                          <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} />
-                          <Tooltip
-                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
-                          />
-                          <Legend />
-                          <Bar yAxisId="left" dataKey="calories" fill="#ff7043" name="Calories" radius={[4, 4, 0, 0]} />
-                          <Bar yAxisId="right" dataKey="protein" fill="#42a5f5" name="Protein (g)" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  {/* AI Chef Plans */}
-                  <div style={{ marginBottom: '20px', padding: '15px', background: '#fff3e0', borderRadius: '12px', border: '1px solid #ffe0b2' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                      <span style={{ fontSize: '24px' }}>👨‍🍳</span>
-                      <h3 style={{ margin: 0, color: '#e65100', fontSize: '16px' }}>AI Chef</h3>
-                    </div>
-
-                    {!suggestedRecipe ? (
-                      <div>
-                        <p style={{ fontSize: '13px', color: '#ef6c00', marginBottom: '15px' }}>
-                          Need inspiration? I can suggest a healthy dinner based on your remaining calories!
-                        </p>
-                        <button
-                          onClick={handleSuggestRecipe}
-                          disabled={isSuggestingRecipe}
-                          style={{
-                            width: '100%', padding: '10px', borderRadius: '10px', border: 'none',
-                            background: '#ff9800', color: 'white', fontWeight: 'bold', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-                          }}
-                        >
-                          {isSuggestingRecipe ? 'Thinking...' : '🍽️ Suggest Dinner'}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="animate-fade-in">
-                        <h4 style={{ margin: '0 0 5px 0', color: '#d84315' }}>{suggestedRecipe.name}</h4>
-                        <p style={{ fontSize: '13px', color: '#bf360c', fontStyle: 'italic', marginBottom: '15px' }}>{suggestedRecipe.description}</p>
-
-                        <div style={{ background: 'rgba(255,255,255,0.6)', padding: '10px', borderRadius: '8px', marginBottom: '15px' }}>
-                          <strong style={{ fontSize: '12px', color: '#d84315' }}>Ingredients:</strong>
-                          <ul style={{ margin: '5px 0 0 20px', padding: 0, fontSize: '13px', color: '#3e2723' }}>
-                            {suggestedRecipe.ingredients.map((ing, i) => (
-                              <li key={i}>
-                                <strong>{ing.item}</strong> <span style={{ color: '#bf360c' }}>{ing.amount}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                          <button
-                            onClick={() => setSuggestedRecipe(null)}
-                            style={{ flex: 1, padding: '8px', background: 'white', border: '1px solid #e65100', color: '#e65100', borderRadius: '8px', fontWeight: 'bold' }}
-                          >
-                            Close
-                          </button>
-                          <button
-                            onClick={() => handleAddToShoppingList(suggestedRecipe.ingredients)}
-                            style={{ flex: 2, padding: '8px', background: '#e65100', border: 'none', color: 'white', borderRadius: '8px', fontWeight: 'bold' }}
-                          >
-                            🛒 Add to List
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                </div>
-              )}
-
-              {homeCategory === 'chore' && (
-                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-
-                  {/* Assigned to Me */}
-                  {assignments.filter(a => a.assignedTo === user.uid && a.status !== 'complete').length > 0 && (
-                    <div style={{ marginBottom: '10px' }}>
-                      <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#666' }}>📋 Assigned to You</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        {assignments.filter(a => a.assignedTo === user.uid && a.status !== 'complete').map(assignment => {
-                          const design = getChoreDesign(assignment.choreName);
+                {/* Eaten Today List */}
+                <div>
+                  <div style={{ borderTop: '1px solid #eee', paddingTop: '10px' }}>
+                    <p style={{ fontSize: '12px', color: '#888', marginBottom: '5px', fontWeight: '600' }}>
+                      {showAllFood ? 'Everyone Eaten Today:' : 'Eaten Today:'}
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {activities
+                        .filter(act => act.type === 'food' && (showAllFood ? true : act.userId === user?.uid) && getIsraelDateString(act.timestamp) === getIsraelDateString())
+                        .map(act => {
+                          const member = groupData?.members?.find(m => m.uid === act.userId);
                           return (
-                            <button
-                              key={assignment.id}
-                              onClick={() => handleUpdateChoreStatus(assignment.id, 'complete')}
-                              style={{
-                                padding: '15px', borderRadius: '12px', background: '#fff3e0', border: '2px solid #ffb74d',
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
-                                boxShadow: '0 2px 5px rgba(0,0,0,0.05)', position: 'relative'
-                              }}
-                            >
-                              <div style={{ position: 'absolute', top: '5px', right: '5px', fontSize: '10px', background: '#ffb74d', color: 'white', padding: '2px 6px', borderRadius: '8px' }}>
-                                Assigned
+                            <div key={act.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f9f9f9', padding: '8px 12px', borderRadius: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {showAllFood && member?.photoURL && <img src={member.photoURL} style={{ width: '20px', height: '20px', borderRadius: '50%' }} />}
+                                <span style={{ fontSize: '13px', color: '#333', fontWeight: '500' }}>
+                                  {act.input || (act.details?.items?.map(i => i.name).join(', ')) || 'Food'}
+                                </span>
                               </div>
-                              <span style={{ fontSize: '24px' }}>{design.icon}</span>
-                              <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#e65100' }}>{assignment.choreName}</span>
-                              <span style={{ fontSize: '12px', color: '#f57c00' }}>+{assignment.chorePoints} pts</span>
-                            </button>
+                              <div style={{ display: 'flex', gap: '4px' }} onClick={e => e.stopPropagation()}>
+                                {['👍', '❤️', '👎'].map(emoji => {
+                                  const hasReacted = act.reactions?.[user.uid] === emoji;
+                                  const reactorNames = getReactorNames(act, emoji);
+                                  const count = reactorNames.length;
+
+                                  return (
+                                    <button
+                                      key={emoji}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        handleReaction(act.id, hasReacted ? null : emoji);
+                                      }}
+                                      title={reactorNames.join(', ')}
+                                      style={{
+                                        background: hasReacted ? '#e3f2fd' : 'transparent',
+                                        border: 'none', padding: '4px', fontSize: '14px', cursor: 'pointer',
+                                        opacity: hasReacted ? 1 : 0.4,
+                                        minWidth: '24px',
+                                        display: 'flex', alignItems: 'center', gap: '2px'
+                                      }}
+                                    >
+                                      {emoji}
+                                      {count > 0 && <span style={{ fontSize: '10px' }}>{count}</span>}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           );
-                        })}
-                      </div>
+                        })
+                      }
                     </div>
-                  )}
-
-                  {/* Quick Chores (Top 4) */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    {chores.slice(0, 4).map(chore => {
-                      const design = getChoreDesign(chore);
-                      return (
-                        <button
-                          key={chore.id}
-                          onClick={() => handleTrack('chore', chore.points, { name: chore.name })}
-                          style={{
-                            padding: '15px', borderRadius: '12px', background: '#f3e5f5', border: 'none',
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
-                          }}
-                        >
-                          <span style={{ fontSize: '24px' }}>{design.icon}</span>
-                          <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#4a148c' }}>{chore.name}</span>
-                          <span style={{ fontSize: '12px', color: '#8e24aa' }}>+{chore.points} pts</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button
-                      onClick={() => { setIsAssigningMode(false); setShowAllChores(true); }}
-                      style={{
-                        flex: 1, padding: '12px', borderRadius: '12px', border: 'none',
-                        background: '#e1bee7', color: '#4a148c', fontWeight: 'bold', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px'
-                      }}
-                    >
-                      <span>➕</span> New Chore
-                    </button>
-                    <button
-                      onClick={() => { setIsAssigningMode(true); setShowAllChores(true); }}
-                      style={{
-                        flex: 1, padding: '12px', borderRadius: '12px', border: 'none',
-                        background: '#ce93d8', color: '#4a148c', fontWeight: 'bold', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px'
-                      }}
-                    >
-                      <span>👤</span> Assign
-                    </button>
                   </div>
                 </div>
-              )}
-
-              {/* Daily Summary & Health Detective (for Pee, Poo, Drink) */}
-              {(homeCategory === 'pee' || homeCategory === 'poo' || homeCategory === 'drink') && (
-                <div style={{ width: '100%', marginTop: '20px' }}>
-
-                  {/* Daily Summary */}
-                  <div style={{ marginBottom: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '15px' }}>
-                    <h3 style={{ color: '#8b8b9e', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '15px', marginTop: 0 }}>Daily Summary</h3>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 5px' }}>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '20px', marginBottom: '5px' }}>{ICONS.pee}</div>
-                        <div style={{ fontSize: '16px', fontWeight: '800', color: '#1a1a2e' }}>
-                          {myStats.pee} <span style={{ fontSize: '12px', color: '#8b8b9e', fontWeight: '400' }}>/ {goals.pee || 10}</span>
-                        </div>
-                      </div>
-                      <div style={{ width: '1px', background: '#eee' }}></div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '20px', marginBottom: '5px' }}>{ICONS.drink}</div>
-                        <div style={{ fontSize: '16px', fontWeight: '800', color: '#1a1a2e' }}>
-                          {myStats.drink} <span style={{ fontSize: '10px', color: '#8b8b9e', fontWeight: '400' }}>ml / {goals.drink || 1500} ml</span>
-                        </div>
-                      </div>
-                      <div style={{ width: '1px', background: '#eee' }}></div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '20px', marginBottom: '5px' }}>{ICONS.poo}</div>
-                        <div style={{ fontSize: '16px', fontWeight: '800', color: '#1a1a2e' }}>
-                          {myStats.poo} <span style={{ fontSize: '12px', color: '#8b8b9e', fontWeight: '400' }}>/ {goals.poo || 1}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Health Detective */}
-                  <div style={{
-                    background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
-                    borderRadius: '20px', padding: '20px', marginBottom: '20px',
-                    boxShadow: '0 4px 15px rgba(33, 150, 243, 0.2)',
-                    border: '1px solid #90caf9'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                      <div style={{ fontSize: '24px' }}>🕵️‍♀️</div>
-                      <h3 style={{ margin: 0, color: '#1565c0', fontSize: '16px' }}>Health Detective</h3>
-                    </div>
-
-                    {healthInsight ? (
-                      <div style={{ background: 'rgba(255,255,255,0.6)', padding: '15px', borderRadius: '15px', marginBottom: '15px' }}>
-                        <p style={{ margin: 0, color: '#0d47a1', fontStyle: 'italic', lineHeight: '1.5', fontSize: '13px' }}>"{healthInsight}"</p>
-                      </div>
-                    ) : (
-                      <p style={{ color: '#546e7a', marginBottom: '15px', fontSize: '13px' }}>Let AI analyze your habits to find hidden patterns!</p>
-                    )}
-
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <button
-                        onClick={() => analyzeHealthPatterns('he')}
-                        disabled={isAnalyzingHealth}
-                        style={{
-                          flex: 1,
-                          background: isAnalyzingHealth ? '#cfd8dc' : '#1976d2',
-                          color: 'white', border: 'none', padding: '8px', borderRadius: '25px',
-                          fontWeight: 'bold', cursor: isAnalyzingHealth ? 'default' : 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontSize: '12px'
-                        }}
-                      >
-                        {isAnalyzingHealth ? '...' : '🇮🇱 נתח'}
-                      </button>
-                      <button
-                        onClick={() => analyzeHealthPatterns('en')}
-                        disabled={isAnalyzingHealth}
-                        style={{
-                          flex: 1,
-                          background: isAnalyzingHealth ? '#cfd8dc' : '#1565c0',
-                          color: 'white', border: 'none', padding: '8px', borderRadius: '25px',
-                          fontWeight: 'bold', cursor: isAnalyzingHealth ? 'default' : 'pointer',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', fontSize: '12px'
-                        }}
-                      >
-                        {isAnalyzingHealth ? '...' : '🇺🇸 Analyze'}
-                      </button>
-                    </div>
-                  </div>
-
-                </div>
-              )}
-
-              {/* Recent History List (Common for all categories) */}
-              {/* Recent History List (Common for all categories) */}
-              {renderCategoryActivity([homeCategory], `Recent ${t(homeCategory) || homeCategory}`)}
-
-            </div>
-
-            {/* Today's Champions */}
-            <div className="card" onClick={() => setActiveTab('trends')} style={{ cursor: 'pointer', marginBottom: '15px', marginTop: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', padding: '15px 15px 0 15px' }}>
-                <h3 style={{ margin: 0, fontSize: '16px' }}>Today's Champions 🏆</h3>
-                <span style={{ fontSize: '12px', color: '#888' }}>View All &gt;</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '0 15px 15px 15px' }}>
-                {(groupData?.members || []).map(member => {
-                  const scores = getLeaderboardScores(member.uid, 'day');
-                  const total = scores.pee + scores.poo + scores.drink + scores.chore;
-                  return { ...member, scores, total };
-                })
-                  .sort((a, b) => b.total - a.total)
-                  .slice(0, 3)
-                  .map((member, index) => (
-                    <div key={member.uid} style={{ padding: '10px', background: index === 0 ? '#fffbf0' : '#f9f9f9', borderRadius: '12px', border: index === 0 ? '2px solid #FFD700' : '1px solid #eee' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{
-                            width: '24px', height: '24px', borderRadius: '50%',
-                            background: index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : '#eee',
-                            color: index < 3 ? 'white' : '#666',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontWeight: 'bold', fontSize: '12px'
-                          }}>
-                            {index + 1}
+
+              {/* Mini Leaderboard Widget */}
+              <div className="card" onClick={() => setActiveTab('leaderboard')} style={{ cursor: 'pointer', marginBottom: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <h3 style={{ margin: 0, fontSize: '16px' }}>Today's Champions 🏆</h3>
+                  <span style={{ fontSize: '12px', color: '#888' }}>View All &gt;</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {groupData?.members?.map(member => {
+                    const scores = getLeaderboardScores(member.uid);
+                    const total = scores.pee + scores.poo + scores.drink + scores.chore;
+                    return { ...member, scores, total };
+                  })
+                    .sort((a, b) => b.total - a.total)
+                    .slice(0, 3)
+                    .map((member, index) => (
+                      <div key={member.uid} style={{ padding: '10px', background: index === 0 ? '#fffbf0' : '#f9f9f9', borderRadius: '12px', border: index === 0 ? '2px solid #FFD700' : '1px solid #eee' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{
+                              width: '24px', height: '24px', borderRadius: '50%',
+                              background: index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : '#eee',
+                              color: index < 3 ? 'white' : '#666',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontWeight: 'bold', fontSize: '12px'
+                            }}>
+                              {index + 1}
+                            </div>
+                            <div style={{ fontWeight: '600', fontSize: '14px' }}>{member.name}</div>
                           </div>
-                          <div style={{ fontWeight: '600', fontSize: '14px' }}>{member.name}</div>
+                          <div style={{ fontWeight: 'bold', color: '#1a1a2e' }}>{member.total} pts</div>
                         </div>
-                        <div style={{ fontWeight: 'bold', color: '#1a1a2e' }}>{member.total} pts</div>
+                        <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: '#666', paddingLeft: '34px' }}>
+                          {member.scores.pee > 0 && <span>{ICONS.pee} {member.scores.pee}</span>}
+                          {member.scores.poo > 0 && <span>{ICONS.poo} {member.scores.poo}</span>}
+                          {member.scores.drink > 0 && <span>{ICONS.drink} {member.scores.drink}</span>}
+                          {member.scores.chore > 0 && <span>{ICONS.chore} {member.scores.chore}</span>}
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: '#666', paddingLeft: '34px' }}>
-                        {member.scores.pee > 0 && <span>{ICONS.pee} {member.scores.pee}</span>}
-                        {member.scores.poo > 0 && <span>{ICONS.poo} {member.scores.poo}</span>}
-                        {member.scores.drink > 0 && <span>{ICONS.drink} {member.scores.drink}</span>}
-                        {member.scores.chore > 0 && <span>{ICONS.chore} {member.scores.chore}</span>}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                </div>
               </div>
+
+
             </div>
+          )}
 
-
-
-
-
-
-
-
-
-
-
-          </div >
-        )}
-
-        {
-          activeTab === 'trends' && (
+          {activeTab === 'trends' && (
             <div className="card" style={{ padding: '20px 10px', minHeight: '80vh' }}>
               {/* Header & Time Range */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 10px 20px 10px' }}>
                 <h3 style={{ margin: 0 }}>{t('leaderboard')} 🏆</h3>
-                <div style={{ background: '#f5f7fa', padding: '4px', borderRadius: '20px', display: 'flex', overflowX: 'auto' }}>
-                  <button
-                    onClick={() => setTrendRange('day')}
-                    style={{
-                      padding: '5px 15px', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold',
-                      background: trendRange === 'day' ? 'white' : 'transparent',
-                      color: trendRange === 'day' ? '#1a1a2e' : '#888',
-                      boxShadow: trendRange === 'day' ? '0 2px 5px rgba(0,0,0,0.05)' : 'none',
-                      border: 'none', whiteSpace: 'nowrap'
-                    }}
-                  >Today</button>
+                <div style={{ background: '#f5f7fa', padding: '4px', borderRadius: '20px', display: 'flex' }}>
                   <button
                     onClick={() => setTrendRange('week')}
                     style={{
@@ -3106,7 +2857,7 @@ function App() {
                       background: trendRange === 'week' ? 'white' : 'transparent',
                       color: trendRange === 'week' ? '#1a1a2e' : '#888',
                       boxShadow: trendRange === 'week' ? '0 2px 5px rgba(0,0,0,0.05)' : 'none',
-                      border: 'none', whiteSpace: 'nowrap'
+                      border: 'none'
                     }}
                   >{t('week')}</button>
                   <button
@@ -3116,19 +2867,9 @@ function App() {
                       background: trendRange === 'month' ? 'white' : 'transparent',
                       color: trendRange === 'month' ? '#1a1a2e' : '#888',
                       boxShadow: trendRange === 'month' ? '0 2px 5px rgba(0,0,0,0.05)' : 'none',
-                      border: 'none', whiteSpace: 'nowrap'
+                      border: 'none'
                     }}
                   >{t('month')}</button>
-                  <button
-                    onClick={() => setTrendRange('all')}
-                    style={{
-                      padding: '5px 15px', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold',
-                      background: trendRange === 'all' ? 'white' : 'transparent',
-                      color: trendRange === 'all' ? '#1a1a2e' : '#888',
-                      boxShadow: trendRange === 'all' ? '0 2px 5px rgba(0,0,0,0.05)' : 'none',
-                      border: 'none', whiteSpace: 'nowrap'
-                    }}
-                  >All</button>
                 </div>
               </div>
 
@@ -3156,23 +2897,12 @@ function App() {
               {/* Podium Logic */}
               {(() => {
                 // 1. Filter Data
-                // 1. Filter Data
                 const now = new Date();
                 const startDate = new Date();
-                let filterFn = (a) => new Date(a.timestamp) >= startDate;
+                if (trendRange === 'week') startDate.setDate(now.getDate() - 7);
+                else startDate.setMonth(now.getMonth() - 1);
 
-                if (trendRange === 'day') {
-                  const todayStr = getIsraelDateString();
-                  filterFn = (a) => getIsraelDateString(a.timestamp) === todayStr;
-                } else if (trendRange === 'week') {
-                  startDate.setDate(now.getDate() - 7);
-                } else if (trendRange === 'month') {
-                  startDate.setMonth(now.getMonth() - 1);
-                } else if (trendRange === 'all') {
-                  startDate.setFullYear(2000);
-                }
-
-                const relevantActs = activities.filter(filterFn);
+                const relevantActs = activities.filter(a => new Date(a.timestamp) >= startDate);
 
                 // 2. Calculate Scores
                 const scores = {};
@@ -3340,11 +3070,9 @@ function App() {
                 );
               })()}
             </div>
-          )
-        }
+          )}
 
-        {
-          activeTab === 'chores' && (
+          {activeTab === 'chores' && (
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h3 style={{ margin: 0 }}>{t('house_chores')} 🧹</h3>
@@ -3558,11 +3286,9 @@ function App() {
                 </div>
               )}
             </div>
-          )
-        }
+          )}
 
-        {
-          activeTab === 'food' && (
+          {activeTab === 'food' && (
             <div className="card">
               <h3 style={{ marginBottom: '20px' }}>{t('food_tracker')} 🍎</h3>
 
@@ -3648,7 +3374,159 @@ function App() {
                 <span style={{ fontSize: '18px', fontWeight: 'bold' }}>{t('add_meal')}</span>
               </button>
 
+              {/* Add Meal Modal */}
+              {showFoodSelection && (
+                <div style={{
+                  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                  background: 'rgba(0,0,0,0.6)', zIndex: 3000,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '20px', backdropFilter: 'blur(8px)'
+                }} onClick={() => setShowFoodSelection(false)}>
+                  <div className="card" style={{ width: '100%', maxWidth: '500px', textAlign: 'center', padding: '30px' }} onClick={e => e.stopPropagation()}>
+                    <h3 style={{ marginBottom: '25px', fontSize: '22px' }}>{t('what_did_you_eat')}</h3>
 
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '25px' }}>
+                      <textarea
+                        value={foodInput}
+                        onChange={(e) => setFoodInput(e.target.value)}
+                        placeholder={t('describe_meal')}
+                        style={{
+                          width: '100%', height: '120px', padding: '15px', borderRadius: '15px',
+                          border: '2px solid #eee', fontSize: '18px', resize: 'none',
+                          background: '#f9f9f9', fontFamily: 'inherit'
+                        }}
+                      />
+
+                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          ref={fileInputRef}
+                          style={{ display: 'none' }}
+                          onChange={handleImageSelect}
+                        />
+                        <button
+                          onClick={() => fileInputRef.current.click()}
+                          style={{
+                            background: foodImage ? '#e8f5e9' : '#f5f5f5',
+                            color: foodImage ? '#2e7d32' : '#666',
+                            border: foodImage ? '2px solid #4caf50' : '2px dashed #ccc',
+                            borderRadius: '15px', padding: '15px 30px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                            fontSize: '16px', fontWeight: '600', width: '100%', cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          <span style={{ fontSize: '24px' }}>{foodImage ? '✅' : '📷'}</span>
+                          <span>{foodImage ? t('image_attached') : t('add_photo')}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        handleAnalyzeFood();
+                      }}
+                      disabled={isAnalyzing || (!foodInput && !foodImage)}
+                      style={{
+                        width: '100%', padding: '18px', borderRadius: '18px',
+                        background: (isAnalyzing || (!foodInput && !foodImage)) ? '#e0e0e0' : 'linear-gradient(135deg, #43a047 0%, #66bb6a 100%)',
+                        color: (isAnalyzing || (!foodInput && !foodImage)) ? '#999' : 'white',
+                        border: 'none', fontWeight: 'bold', fontSize: '18px',
+                        cursor: (isAnalyzing || (!foodInput && !foodImage)) ? 'not-allowed' : 'pointer',
+                        boxShadow: (isAnalyzing || (!foodInput && !foodImage)) ? 'none' : '0 10px 20px rgba(67, 160, 71, 0.3)'
+                      }}
+                    >
+                      {isAnalyzing ? t('analyzing') : t('analyze_food')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Food Analysis Confirmation Modal */}
+              {analyzedFoodData && (
+                <div style={{
+                  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                  background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000,
+                  backdropFilter: 'blur(5px)'
+                }} onClick={() => setAnalyzedFoodData(null)}>
+                  <div style={{
+                    background: 'white', padding: '25px', borderRadius: '20px', width: '90%', maxWidth: '350px',
+                    maxHeight: '80vh', overflowY: 'auto'
+                  }} onClick={e => e.stopPropagation()}>
+                    <h3 style={{ marginTop: 0 }}>{t('confirm_meal')}</h3>
+
+                    {analyzedFoodData.image && (
+                      <img src={analyzedFoodData.image} alt="Meal" style={{ width: '100%', borderRadius: '12px', marginBottom: '15px', maxHeight: '200px', objectFit: 'cover' }} />
+                    )}
+
+                    <div style={{ marginBottom: '15px' }}>
+                      <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1a1a2e' }}>
+                        {analyzedFoodData.data.totalCalories} cal
+                      </div>
+                      <div style={{ fontSize: '14px', color: '#666' }}>
+                        {analyzedFoodData.data.totalProtein}g protein
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+                      {analyzedFoodData.data.items?.map((item, idx) => (
+                        <div key={idx} style={{ background: '#f5f7fa', padding: '10px', borderRadius: '8px', fontSize: '14px' }}>
+                          <span style={{ marginRight: '8px' }}>{item.emoji}</span>
+                          <strong>{item.name}</strong>
+                          <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
+                            {item.calories} cal • {item.protein}g protein
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {analyzedFoodData.data.feedback && (
+                      <div style={{ fontSize: '13px', color: '#2e7d32', background: '#e8f5e9', padding: '10px', borderRadius: '8px', marginBottom: '20px', fontStyle: 'italic' }}>
+                        "{analyzedFoodData.data.feedback}"
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                      <button
+                        onClick={() => setAnalyzedFoodData({ ...analyzedFoodData, data: { ...analyzedFoodData.data, isHealthy: true } })}
+                        style={{
+                          flex: 1, padding: '10px', borderRadius: '10px', border: '2px solid #4caf50',
+                          background: analyzedFoodData.data.isHealthy ? '#e8f5e9' : 'white',
+                          color: analyzedFoodData.data.isHealthy ? '#2e7d32' : '#666', fontWeight: 'bold', cursor: 'pointer'
+                        }}
+                      >
+                        {t('healthy_plus_one')}
+                      </button>
+                      <button
+                        onClick={() => setAnalyzedFoodData({ ...analyzedFoodData, data: { ...analyzedFoodData.data, isHealthy: false } })}
+                        style={{
+                          flex: 1, padding: '10px', borderRadius: '10px', border: '2px solid #ef5350',
+                          background: !analyzedFoodData.data.isHealthy ? '#ffebee' : 'white',
+                          color: !analyzedFoodData.data.isHealthy ? '#c62828' : '#666', fontWeight: 'bold', cursor: 'pointer'
+                        }}
+                      >
+                        {t('junk_minus_one')}
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        onClick={() => setAnalyzedFoodData(null)}
+                        style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: '#eee', fontWeight: 'bold', cursor: 'pointer' }}
+                      >
+                        {t('cancel')}
+                      </button>
+                      <button
+                        onClick={handleConfirmFood}
+                        style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: COLORS.food, color: 'white', fontWeight: 'bold', cursor: 'pointer' }}
+                      >
+                        {t('add_meal')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* AI Chef Section */}
               <div className="card" style={{ marginBottom: '20px', background: 'linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)', border: '1px solid #ffcc80' }}>
@@ -3709,7 +3587,70 @@ function App() {
                 )}
               </div>
 
+              {/* Shopping List Section */}
+              <div className="card" style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
+                  <h3 style={{ margin: 0 }}>Shopping List 🛒</h3>
+                  <span style={{ fontSize: '12px', color: '#888', background: '#f5f5f5', padding: '2px 8px', borderRadius: '10px' }}>
+                    {shoppingList.filter(i => !i.checked).length} items
+                  </span>
+                </div>
 
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                  <input
+                    type="text"
+                    placeholder="Add item..."
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleAddManualShoppingItem(e.target.value);
+                        e.target.value = '';
+                      }
+                    }}
+                    style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ddd', background: '#f9f9f9' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                  {shoppingList.length === 0 && <p style={{ color: '#ccc', textAlign: 'center', fontSize: '14px' }}>List is empty</p>}
+                  {shoppingList.map(item => (
+                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', background: item.checked ? '#f0f0f0' : 'white', borderRadius: '8px', borderBottom: '1px solid #eee' }}>
+                      <input
+                        type="checkbox"
+                        checked={item.checked}
+                        onChange={() => handleToggleShoppingItem(item.id, item.checked)}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                      />
+
+                      {editingShoppingItem === item.id ? (
+                        <div style={{ flex: 1, display: 'flex', gap: '5px' }}>
+                          <input
+                            type="text"
+                            value={editingShoppingText}
+                            onChange={(e) => setEditingShoppingText(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleUpdateShoppingItem()}
+                            autoFocus
+                            style={{ flex: 1, padding: '4px', borderRadius: '4px', border: '1px solid #42a5f5' }}
+                          />
+                          <button onClick={handleUpdateShoppingItem} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>✅</button>
+                          <button onClick={() => setEditingShoppingItem(null)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>❌</button>
+                        </div>
+                      ) : (
+                        <span
+                          onClick={() => {
+                            setEditingShoppingItem(item.id);
+                            setEditingShoppingText(item.name);
+                          }}
+                          style={{ flex: 1, textDecoration: item.checked ? 'line-through' : 'none', color: item.checked ? '#aaa' : '#333', cursor: 'text' }}
+                        >
+                          {item.name}
+                        </span>
+                      )}
+
+                      <button onClick={() => handleDeleteShoppingItem(item.id)} style={{ color: '#ff5252', fontSize: '18px', padding: '0 5px', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <h4 style={{ fontSize: '14px', color: '#666', margin: 0 }}>{t('todays_meals')}</h4>
@@ -3804,200 +3745,9 @@ function App() {
                 )}
               </div>
             </div>
-          )
-        }
+          )}
 
-        {
-          activeTab === 'settings_family' && (
-            <div className="card" style={{ padding: '20px', paddingBottom: '80px' }}>
-              <h3 style={{ fontSize: '22px', marginBottom: '20px' }}>{t('family')}</h3>
-              <div style={{ marginBottom: '25px', padding: '15px', background: '#f5f7fa', borderRadius: '16px' }}>
-                <h4 style={{ marginBottom: '15px', color: '#666', fontSize: '14px', textAlign: 'left' }}>Family Group</h4>
-                <div style={{ background: 'white', padding: '15px', borderRadius: '12px', marginBottom: '15px', border: '1px solid #eee' }}>
-                  <p style={{ marginBottom: '5px', fontSize: '12px', color: '#888' }}>{t('group_code')}</p>
-                  <div style={{ fontSize: '28px', fontWeight: '800', color: '#1a1a2e', letterSpacing: '2px' }}>{groupCode}</div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {groupData?.members?.map(member => (
-                    <div key={member.uid} onClick={() => handleMemberClick(member)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'white', borderRadius: '10px', border: '1px solid #eee', cursor: 'pointer' }}>
-                      {member.photoURL ? <img src={member.photoURL} style={{ width: '30px', height: '30px', borderRadius: '50%' }} /> : <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>{member.name?.[0]}</div>}
-                      <div style={{ flex: 1, textAlign: 'left', fontWeight: '500', fontSize: '14px' }}>{member.name} {member.uid === user.uid && '(You)'}</div>
-                      <div style={{ fontSize: '12px', color: '#888' }}>{member.role}</div>
-                    </div>
-                  ))}
-                </div>
-                <button onClick={handleShare} style={{ marginTop: '15px', width: '100%', padding: '10px', background: '#1a1a2e', color: 'white', borderRadius: '10px', fontWeight: 'bold' }}>
-                  {t('invite_family')} 📤
-                </button>
-              </div>
-            </div>
-          )
-        }
-        {
-          activeTab === 'settings_profile' && (
-            <div className="card" style={{ padding: '20px', paddingBottom: '80px' }}>
-              <h3 style={{ fontSize: '22px', marginBottom: '20px' }}>My Profile</h3>
-              <div style={{ marginBottom: '25px', padding: '15px', background: '#fff', borderRadius: '16px', border: '1px solid #eee', textAlign: 'left' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
-                  {user.photoURL ? <img src={user.photoURL} style={{ width: '50px', height: '50px', borderRadius: '50%' }} /> : <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#1a1a2e', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{user.displayName?.[0]}</div>}
-                  <div>
-                    <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{user.displayName}</div>
-                    <div style={{ fontSize: '12px', color: '#888' }}>{user.email}</div>
-                  </div>
-                </div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 'bold', color: '#333' }}>Weight (kg)</label>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <input type="number" value={currentUserWeight || ''} onChange={(e) => handleUpdateWeight(e.target.value)} placeholder="e.g. 70" style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ddd', background: '#f9f9f9' }} />
-                </div>
-              </div>
-              <div style={{ marginBottom: '25px', padding: '15px', background: '#fff', borderRadius: '16px', border: '1px solid #eee', textAlign: 'left' }}>
-                <h4 style={{ marginBottom: '15px', color: '#666', fontSize: '14px' }}>Preferences</h4>
-                <div style={{ marginBottom: '15px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 'bold', color: '#333' }}>Language</label>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={() => setLanguage('en')} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #eee', background: language === 'en' ? '#e3f2fd' : 'white', color: language === 'en' ? '#1565c0' : '#333', fontWeight: 'bold' }}>🇺🇸 English</button>
-                    <button onClick={() => setLanguage('he')} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #eee', background: language === 'he' ? '#e3f2fd' : 'white', color: language === 'he' ? '#1565c0' : '#333', fontWeight: 'bold' }}>🇮🇱 Hebrew</button>
-                  </div>
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 'bold', color: '#333' }}>My Bottle Size (ml)</label>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <input type="number" value={bottleSize} onChange={(e) => setBottleSize(e.target.value === '' ? '' : parseInt(e.target.value))} placeholder="e.g. 750" style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ddd', background: '#f9f9f9' }} />
-                    <button onClick={() => handleSaveBottleSize(bottleSize)} disabled={saveStatus === 'saving'} style={{ background: saveStatus === 'saved' ? '#4caf50' : '#1a1a2e', color: 'white', border: 'none', padding: '0 20px', borderRadius: '10px', fontWeight: 'bold' }}>{saveStatus === 'saved' ? '✓' : 'Save'}</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )
-        }
-        {
-          activeTab === 'settings_goals' && (
-            <div className="card" style={{ padding: '20px', paddingBottom: '80px' }}>
-              <h3 style={{ fontSize: '22px', marginBottom: '20px' }}>Daily Goals</h3>
-              {currentUserRole === 'parent' ? (
-                <div style={{ marginBottom: '25px', padding: '15px', background: '#fff', borderRadius: '16px', border: '1px solid #eee', textAlign: 'left' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    {['pee', 'drink', 'poo'].map(type => (
-                      <div key={type} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${COLORS[type]}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{ICONS[type]}</div>
-                          <div style={{ fontWeight: '600', textTransform: 'capitalize', fontSize: '14px' }}>{t(type)}</div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#f5f7fa', padding: '4px', borderRadius: '12px' }}>
-                          <button onClick={() => handleSaveGoals({ ...goals, [type]: Math.max(0, (goals[type] || 0) - (type === 'drink' ? 250 : 1)) })} style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'white', border: 'none', fontWeight: 'bold' }}>-</button>
-                          <span style={{ width: '40px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold' }}>{goals[type] || 0}</span>
-                          <button onClick={() => handleSaveGoals({ ...goals, [type]: (goals[type] || 0) + (type === 'drink' ? 250 : 1) })} style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'white', border: 'none', fontWeight: 'bold' }}>+</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p>Only parents can edit goals.</p>
-              )}
-            </div>
-          )
-        }
-        {
-          activeTab === 'settings_whats_new' && (
-            <div className="card" style={{ padding: '20px', paddingBottom: '80px' }}>
-              <h3 style={{ fontSize: '22px', marginBottom: '20px' }}>What's New</h3>
-              <div style={{ marginBottom: '25px', padding: '15px', background: '#e3f2fd', borderRadius: '16px', border: '1px solid #bbdefb', textAlign: 'left' }}>
-                <ul style={{ paddingLeft: '20px', margin: 0, fontSize: '13px', color: '#333', lineHeight: '1.6' }}>
-                  <li><strong>Safari Login Fix:</strong> Improved login reliability.</li>
-                  <li><strong>Reaction Names:</strong> See who reacted to your activities!</li>
-                  <li><strong>Food Analysis:</strong> AI-powered food tracking with photos.</li>
-                  <li><strong>Settings Page:</strong> Dedicated page for better configuration.</li>
-                </ul>
-              </div>
-            </div>
-          )
-        }
-        {
-          activeTab === 'settings_system' && (
-            <div className="card" style={{ padding: '20px', paddingBottom: '80px' }}>
-              <h3 style={{ fontSize: '22px', marginBottom: '20px' }}>System</h3>
-              <div style={{ marginBottom: '25px', padding: '15px', background: '#fff', borderRadius: '16px', border: '1px solid #eee', textAlign: 'left' }}>
-                <button onClick={() => window.location.reload()} style={{ width: '100%', padding: '12px', marginBottom: '10px', background: '#f5f5f5', color: '#333', border: 'none', borderRadius: '12px', fontWeight: '600', fontSize: '14px' }}>🔄 Refresh App Data</button>
-                <button onClick={handleExitGroup} style={{ width: '100%', padding: '12px', marginBottom: '10px', background: '#fff3e0', color: '#e65100', border: 'none', borderRadius: '12px', fontWeight: '600', fontSize: '14px' }}>{t('change_group')}</button>
-                {currentUserRole === 'parent' && (
-                  <button onClick={handleResetData} style={{ width: '100%', padding: '12px', marginBottom: '10px', background: '#ffebee', color: '#d32f2f', border: 'none', borderRadius: '12px', fontWeight: '600', fontSize: '14px' }}>{t('reset_data')} 🗑️</button>
-                )}
-              </div>
-            </div>
-          )
-        }
-
-        {
-          activeTab === 'shopping' && (
-            <div className="card">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
-                <h3 style={{ margin: 0 }}>Shopping List 🛒</h3>
-                <span style={{ fontSize: '12px', color: '#888', background: '#f5f5f5', padding: '2px 8px', borderRadius: '10px' }}>
-                  {shoppingList.filter(i => !i.checked).length} items
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                <input
-                  type="text"
-                  placeholder="Add item..."
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleAddManualShoppingItem(e.target.value);
-                      e.target.value = '';
-                    }
-                  }}
-                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ddd', background: '#f9f9f9' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '600px', overflowY: 'auto' }}>
-                {shoppingList.length === 0 && <p style={{ color: '#ccc', textAlign: 'center', fontSize: '14px' }}>List is empty</p>}
-                {shoppingList.map(item => (
-                  <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', background: item.checked ? '#f0f0f0' : 'white', borderRadius: '8px', borderBottom: '1px solid #eee' }}>
-                    <input
-                      type="checkbox"
-                      checked={item.checked}
-                      onChange={() => handleToggleShoppingItem(item.id, item.checked)}
-                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                    />
-
-                    {editingShoppingItem === item.id ? (
-                      <div style={{ flex: 1, display: 'flex', gap: '5px' }}>
-                        <input
-                          type="text"
-                          value={editingShoppingText}
-                          onChange={(e) => setEditingShoppingText(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleUpdateShoppingItem()}
-                          autoFocus
-                          style={{ flex: 1, padding: '4px', borderRadius: '4px', border: '1px solid #42a5f5' }}
-                        />
-                        <button onClick={handleUpdateShoppingItem} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>✅</button>
-                        <button onClick={() => setEditingShoppingItem(null)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>❌</button>
-                      </div>
-                    ) : (
-                      <span
-                        onClick={() => {
-                          setEditingShoppingItem(item.id);
-                          setEditingShoppingText(item.name);
-                        }}
-                        style={{ flex: 1, textDecoration: item.checked ? 'line-through' : 'none', color: item.checked ? '#aaa' : '#333', cursor: 'text' }}
-                      >
-                        {item.name}
-                      </span>
-                    )}
-
-                    <button onClick={() => handleDeleteShoppingItem(item.id)} style={{ color: '#ff5252', fontSize: '18px', padding: '0 5px', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        }
-
-        {
-          activeTab === 'leaderboard' && (
+          {activeTab === 'leaderboard' && (
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h3 style={{ margin: 0 }}>Leaderboard 🏆</h3>
@@ -4060,122 +3810,233 @@ function App() {
                   ))}
               </div>
             </div>
-          )
-        }
+          )}
 
-        {/* Member Details Modal */}
-        {showMemberDetails && selectedMemberDetails && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-          }} onClick={() => setShowMemberDetails(false)}>
-            <div style={{ background: 'white', padding: '25px', borderRadius: '20px', width: '90%', maxWidth: '400px', maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ margin: 0 }}>{selectedMemberDetails.name}</h3>
-                <button onClick={() => setShowMemberDetails(false)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>×</button>
-              </div>
+          {activeTab === 'family' && (
+            <div className="card" style={{ textAlign: 'center', padding: '20px', paddingBottom: '80px' }}>
+              <div style={{ fontSize: '40px', marginBottom: '10px' }}>⚙️</div>
+              <h3 style={{ fontSize: '22px', marginBottom: '20px' }}>{t('settings')} & {t('family')}</h3>
 
-              {/* Badges Section */}
-              {(currentUserRole === 'parent' || selectedMemberDetails.uid === user.uid) && (
-                <div style={{ marginBottom: '20px', padding: '15px', background: '#f5f5f5', borderRadius: '12px' }}>
-                  <label style={{ display: 'block', marginBottom: '5px', fontSize: '12px', fontWeight: 'bold', color: '#666' }}>Weight (kg)</label>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <input
-                      type="number"
-                      value={memberWeight}
-                      onChange={(e) => setMemberWeight(e.target.value)}
-                      placeholder="e.g. 70"
-                      style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #ddd' }}
-                    />
-                    <button
-                      onClick={handleSaveWeight}
-                      style={{ background: '#1a1a2e', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '8px', fontWeight: 'bold' }}
-                    >
-                      Save
-                    </button>
-                  </div>
+              {/* Family Section */}
+              <div style={{ marginBottom: '25px', padding: '15px', background: '#f5f7fa', borderRadius: '16px' }}>
+                <h4 style={{ marginBottom: '15px', color: '#666', fontSize: '14px', textAlign: 'left' }}>Family Group</h4>
+                <div style={{ background: 'white', padding: '15px', borderRadius: '12px', marginBottom: '15px', border: '1px solid #eee' }}>
+                  <p style={{ marginBottom: '5px', fontSize: '12px', color: '#888' }}>{t('group_code')}</p>
+                  <div style={{ fontSize: '28px', fontWeight: '800', color: '#1a1a2e', letterSpacing: '2px' }}>{groupCode}</div>
                 </div>
-              )}
 
-              {memberBadges.length > 0 && (
-                <div style={{ marginBottom: '20px' }}>
-                  <h4 style={{ marginBottom: '10px', color: '#666' }}>Badges 🏆</h4>
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    {memberBadges.map(badgeId => {
-                      const badge = BADGES.find(b => b.id === badgeId);
-                      if (!badge) return null;
-                      return (
-                        <div key={badgeId} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px' }} title={badge.name + ': ' + badge.description}>
-                          <div style={{ fontSize: '30px', marginBottom: '5px' }}>{badge.icon}</div>
-                          <div style={{ fontSize: '10px', textAlign: 'center', lineHeight: '1.2' }}>{badge.name}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <h4 style={{ marginBottom: '15px', color: '#666' }}>Recent Activities</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {activities
-                  .filter(a => a.userId === selectedMemberDetails.uid)
-                  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-                  .slice(0, 20)
-                  .map(act => (
-                    <div key={act.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#f9f9f9', borderRadius: '10px' }}>
-                      <div>
-                        <div style={{ fontWeight: 'bold' }}>{ICONS[act.type] || '❓'} {t(act.type)}</div>
-                        <div style={{ fontSize: '12px', color: '#888' }}>
-                          {new Date(act.timestamp).toLocaleString()}
-                          {act.type === 'food' && ` • ${act.input || act.details?.items?.map(i => i.name).join(', ') || act.details?.totalCalories + ' cal'}`}
-                          {act.type === 'chore' && ` • ${act.details?.name || act.amount + ' pts'}`}
-                          {act.type === 'drink' && ` • ${act.amount} ml`}
-                        </div>
-                        {/* Reactions */}
-                        {(act.type === 'chore' || act.type === 'food') && (
-                          <div style={{ display: 'flex', gap: '5px', marginTop: '5px' }}>
-                            {['👍', '❤️', '👎'].map(emoji => {
-                              const hasReacted = act.reactions?.[user.uid] === emoji;
-                              const count = Object.values(act.reactions || {}).filter(r => r === emoji).length;
-                              return (
-                                <button
-                                  key={emoji}
-                                  onClick={(e) => { e.stopPropagation(); handleReaction(act.id, hasReacted ? null : emoji); }}
-                                  style={{
-                                    background: hasReacted ? '#e3f2fd' : 'transparent',
-                                    border: '1px solid #eee', borderRadius: '12px',
-                                    padding: '2px 6px', fontSize: '12px', cursor: 'pointer',
-                                    opacity: hasReacted ? 1 : 0.6
-                                  }}
-                                >
-                                  {emoji} {count > 0 && count}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                      {(currentUserRole === 'parent' || act.userId === user.uid) && (
-                        <button
-                          onClick={() => handleDeleteActivity(act.id)}
-                          style={{ background: '#ffebee', color: '#c62828', border: 'none', padding: '5px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}
-                        >
-                          Delete 🗑️
-                        </button>
-                      )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {groupData?.members?.map(member => (
+                    <div key={member.uid} onClick={() => handleMemberClick(member)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'white', borderRadius: '10px', border: '1px solid #eee', cursor: 'pointer' }}>
+                      {member.photoURL ? <img src={member.photoURL} style={{ width: '30px', height: '30px', borderRadius: '50%' }} /> : <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>{member.name?.[0]}</div>}
+                      <div style={{ flex: 1, textAlign: 'left', fontWeight: '500', fontSize: '14px' }}>{member.name} {member.uid === user.uid && '(You)'}</div>
+                      <div style={{ fontSize: '12px', color: '#888' }}>{member.role}</div>
                     </div>
                   ))}
-                {activities.filter(a => a.userId === selectedMemberDetails.uid).length === 0 && (
-                  <p style={{ color: '#888', fontStyle: 'italic' }}>No recent activities.</p>
-                )}
+                </div>
+
+                <button onClick={handleShare} style={{ marginTop: '15px', width: '100%', padding: '10px', background: '#1a1a2e', color: 'white', borderRadius: '10px', fontWeight: 'bold' }}>
+                  {t('invite_family')} 📤
+                </button>
               </div>
+
+              {/* Profile Section */}
+              <div style={{ marginBottom: '25px', padding: '15px', background: '#fff', borderRadius: '16px', border: '1px solid #eee', textAlign: 'left' }}>
+                <h4 style={{ marginBottom: '15px', color: '#666', fontSize: '14px' }}>My Profile</h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
+                  {user.photoURL ? <img src={user.photoURL} style={{ width: '50px', height: '50px', borderRadius: '50%' }} /> : <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#1a1a2e', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{user.displayName?.[0]}</div>}
+                  <div>
+                    <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{user.displayName}</div>
+                    <div style={{ fontSize: '12px', color: '#888' }}>{user.email}</div>
+                  </div>
+                </div>
+
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 'bold', color: '#333' }}>Weight (kg)</label>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <input type="number" value={currentUserWeight || ''} onChange={(e) => handleUpdateWeight(e.target.value)} placeholder="e.g. 70" style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ddd', background: '#f9f9f9' }} />
+                </div>
+              </div>
+
+              {/* Preferences */}
+              <div style={{ marginBottom: '25px', padding: '15px', background: '#fff', borderRadius: '16px', border: '1px solid #eee', textAlign: 'left' }}>
+                <h4 style={{ marginBottom: '15px', color: '#666', fontSize: '14px' }}>Preferences</h4>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 'bold', color: '#333' }}>Language</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={() => setLanguage('en')} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #eee', background: language === 'en' ? '#e3f2fd' : 'white', color: language === 'en' ? '#1565c0' : '#333', fontWeight: 'bold' }}>🇺🇸 English</button>
+                    <button onClick={() => setLanguage('he')} style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #eee', background: language === 'he' ? '#e3f2fd' : 'white', color: language === 'he' ? '#1565c0' : '#333', fontWeight: 'bold' }}>🇮🇱 Hebrew</button>
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: 'bold', color: '#333' }}>My Bottle Size (ml)</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <input type="number" value={bottleSize} onChange={(e) => setBottleSize(e.target.value === '' ? '' : parseInt(e.target.value))} placeholder="e.g. 750" style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ddd', background: '#f9f9f9' }} />
+                    <button onClick={() => handleSaveBottleSize(bottleSize)} disabled={saveStatus === 'saving'} style={{ background: saveStatus === 'saved' ? '#4caf50' : '#1a1a2e', color: 'white', border: 'none', padding: '0 20px', borderRadius: '10px', fontWeight: 'bold' }}>{saveStatus === 'saved' ? '✓' : 'Save'}</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Daily Goals */}
+              <div style={{ marginBottom: '25px', padding: '15px', background: '#fff', borderRadius: '16px', border: '1px solid #eee', textAlign: 'left' }}>
+                <h4 style={{ marginBottom: '15px', color: '#666', fontSize: '14px' }}>Daily Goals 🎯</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  {['pee', 'drink', 'poo'].map(type => (
+                    <div key={type} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${COLORS[type]}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{ICONS[type]}</div>
+                        <div style={{ fontWeight: '600', textTransform: 'capitalize', fontSize: '14px' }}>{t(type)}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#f5f7fa', padding: '4px', borderRadius: '12px' }}>
+                        <button onClick={() => handleSaveGoals({ ...goals, [type]: Math.max(0, (goals[type] || 0) - (type === 'drink' ? 250 : 1)) })} style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'white', border: 'none', fontWeight: 'bold' }}>-</button>
+                        <span style={{ width: '40px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold' }}>{goals[type] || 0}</span>
+                        <button onClick={() => handleSaveGoals({ ...goals, [type]: (goals[type] || 0) + (type === 'drink' ? 250 : 1) })} style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'white', border: 'none', fontWeight: 'bold' }}>+</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* What's New */}
+              <div style={{ marginBottom: '25px', padding: '15px', background: '#e3f2fd', borderRadius: '16px', border: '1px solid #bbdefb', textAlign: 'left' }}>
+                <h4 style={{ marginBottom: '10px', color: '#1565c0', fontSize: '14px' }}>What's New 🚀</h4>
+                <ul style={{ paddingLeft: '20px', margin: 0, fontSize: '13px', color: '#333', lineHeight: '1.6' }}>
+                  <li><strong>Safari Login Fix:</strong> Improved login reliability.</li>
+                  <li><strong>Reaction Names:</strong> See who reacted to your activities!</li>
+                  <li><strong>Food Analysis:</strong> AI-powered food tracking with photos.</li>
+                  <li><strong>Settings Page:</strong> Dedicated page for better configuration.</li>
+                </ul>
+              </div>
+
+              {/* System */}
+              <div style={{ marginBottom: '25px', padding: '15px', background: '#fff', borderRadius: '16px', border: '1px solid #eee', textAlign: 'left' }}>
+                <h4 style={{ marginBottom: '15px', color: '#666', fontSize: '14px' }}>System</h4>
+                <button onClick={() => window.location.reload()} style={{ width: '100%', padding: '12px', marginBottom: '10px', background: '#f5f5f5', color: '#333', border: 'none', borderRadius: '12px', fontWeight: '600', fontSize: '14px' }}>🔄 Refresh App Data</button>
+                <button onClick={handleExitGroup} style={{ width: '100%', padding: '12px', marginBottom: '10px', background: '#fff3e0', color: '#e65100', border: 'none', borderRadius: '12px', fontWeight: '600', fontSize: '14px' }}>{t('change_group')}</button>
+                {currentUserRole === 'parent' && (
+                  <button onClick={handleResetData} style={{ width: '100%', padding: '12px', marginBottom: '10px', background: '#ffebee', color: '#d32f2f', border: 'none', borderRadius: '12px', fontWeight: '600', fontSize: '14px' }}>{t('reset_data')} 🗑️</button>
+                )}
+                <button onClick={handleLogout} style={{ width: '100%', padding: '12px', background: '#ffebee', color: '#d32f2f', border: 'none', borderRadius: '12px', fontWeight: '600', fontSize: '14px' }}>🚪 {t('logout')}</button>
+              </div>
+
+              <div style={{ textAlign: 'center', color: '#aaa', fontSize: '12px', marginTop: '20px' }}>
+                Activity Tracker v{__APP_VERSION__}<br />
+                Group: {groupCode}
+              </div>
+
+              {/* Member Details Modal */}
+              {showMemberDetails && selectedMemberDetails && (
+                <div style={{
+                  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                  background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }} onClick={() => setShowMemberDetails(false)}>
+                  <div style={{ background: 'white', padding: '25px', borderRadius: '20px', width: '90%', maxWidth: '400px', maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                      <h3 style={{ margin: 0 }}>{selectedMemberDetails.name}</h3>
+                      <button onClick={() => setShowMemberDetails(false)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>×</button>
+                    </div>
+
+                    {/* Badges Section */}
+                    {(currentUserRole === 'parent' || selectedMemberDetails.uid === user.uid) && (
+                      <div style={{ marginBottom: '20px', padding: '15px', background: '#f5f5f5', borderRadius: '12px' }}>
+                        <label style={{ display: 'block', marginBottom: '5px', fontSize: '12px', fontWeight: 'bold', color: '#666' }}>Weight (kg)</label>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <input
+                            type="number"
+                            value={memberWeight}
+                            onChange={(e) => setMemberWeight(e.target.value)}
+                            placeholder="e.g. 70"
+                            style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #ddd' }}
+                          />
+                          <button
+                            onClick={handleSaveWeight}
+                            style={{ background: '#1a1a2e', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '8px', fontWeight: 'bold' }}
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {memberBadges.length > 0 && (
+                      <div style={{ marginBottom: '20px' }}>
+                        <h4 style={{ marginBottom: '10px', color: '#666' }}>Badges 🏆</h4>
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                          {memberBadges.map(badgeId => {
+                            const badge = BADGES.find(b => b.id === badgeId);
+                            if (!badge) return null;
+                            return (
+                              <div key={badgeId} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '60px' }} title={badge.name + ': ' + badge.description}>
+                                <div style={{ fontSize: '30px', marginBottom: '5px' }}>{badge.icon}</div>
+                                <div style={{ fontSize: '10px', textAlign: 'center', lineHeight: '1.2' }}>{badge.name}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    <h4 style={{ marginBottom: '15px', color: '#666' }}>Recent Activities</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {activities
+                        .filter(a => a.userId === selectedMemberDetails.uid)
+                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                        .slice(0, 20)
+                        .map(act => (
+                          <div key={act.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#f9f9f9', borderRadius: '10px' }}>
+                            <div>
+                              <div style={{ fontWeight: 'bold' }}>{ICONS[act.type] || '❓'} {t(act.type)}</div>
+                              <div style={{ fontSize: '12px', color: '#888' }}>
+                                {new Date(act.timestamp).toLocaleString()}
+                                {act.type === 'food' && ` • ${act.input || act.details?.items?.map(i => i.name).join(', ') || act.details?.totalCalories + ' cal'}`}
+                                {act.type === 'chore' && ` • ${act.details?.name || act.amount + ' pts'}`}
+                                {act.type === 'drink' && ` • ${act.amount} ml`}
+                              </div>
+                              {/* Reactions */}
+                              {(act.type === 'chore' || act.type === 'food') && (
+                                <div style={{ display: 'flex', gap: '5px', marginTop: '5px' }}>
+                                  {['👍', '❤️', '👎'].map(emoji => {
+                                    const hasReacted = act.reactions?.[user.uid] === emoji;
+                                    const count = Object.values(act.reactions || {}).filter(r => r === emoji).length;
+                                    return (
+                                      <button
+                                        key={emoji}
+                                        onClick={(e) => { e.stopPropagation(); handleReaction(act.id, hasReacted ? null : emoji); }}
+                                        style={{
+                                          background: hasReacted ? '#e3f2fd' : 'transparent',
+                                          border: '1px solid #eee', borderRadius: '12px',
+                                          padding: '2px 6px', fontSize: '12px', cursor: 'pointer',
+                                          opacity: hasReacted ? 1 : 0.6
+                                        }}
+                                      >
+                                        {emoji} {count > 0 && count}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                            {(currentUserRole === 'parent' || act.userId === user.uid) && (
+                              <button
+                                onClick={() => handleDeleteActivity(act.id)}
+                                style={{ background: '#ffebee', color: '#c62828', border: 'none', padding: '5px 10px', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}
+                              >
+                                Delete 🗑️
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      {activities.filter(a => a.userId === selectedMemberDetails.uid).length === 0 && (
+                        <p style={{ color: '#888', fontStyle: 'italic' }}>No recent activities.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-      </div >
-
-
+      </div>
 
       {/* Badge Celebration Modal */}
       {
@@ -4363,274 +4224,32 @@ function App() {
         )
       }
 
-      {/* All Chores Modal */}
-      {
-        showAllChores && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.6)', zIndex: 3000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '20px', backdropFilter: 'blur(5px)'
-          }} onClick={() => setShowAllChores(false)}>
-            <div className="card" style={{ width: '100%', maxWidth: '400px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
-              <h3 style={{ marginBottom: '15px' }}>{isAssigningMode ? 'Select Chore to Assign' : 'Select Chore'}</h3>
-              <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {chores.map(chore => {
-                  const design = getChoreDesign(chore);
-                  return (
-                    <button
-                      key={chore.id}
-                      onClick={() => {
-                        if (isAssigningMode) {
-                          setChoreToAssign(chore);
-                          setShowAssignChore(true);
-                          setShowAllChores(false);
-                        } else {
-                          handleTrack('chore', chore.points, { name: chore.name });
-                          setShowAllChores(false);
-                        }
-                      }}
-                      style={{
-                        padding: '15px', borderRadius: '12px', background: '#f3e5f5', border: 'none',
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        cursor: 'pointer', textAlign: 'left'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '24px' }}>{design.icon}</span>
-                        <span style={{ fontWeight: 'bold', color: '#4a148c' }}>{chore.name}</span>
-                      </div>
-                      <span style={{ color: '#8e24aa', fontWeight: 'bold' }}>{chore.points} pts</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <button onClick={() => setShowAllChores(false)} style={{ marginTop: '15px', padding: '10px', background: '#eee', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        )
-      }
-
-      {/* Assign Chore Modal (Select User) */}
-      {
-        showAssignChore && choreToAssign && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.6)', zIndex: 3100,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '20px', backdropFilter: 'blur(5px)'
-          }} onClick={() => setShowAssignChore(false)}>
-            <div className="card" style={{ width: '100%', maxWidth: '350px' }} onClick={e => e.stopPropagation()}>
-              <h3 style={{ marginBottom: '5px' }}>Assign to...</h3>
-              <p style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>
-                {choreToAssign.name} ({choreToAssign.points} pts)
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {groupData?.members?.map(member => (
-                  <button
-                    key={member.uid}
-                    onClick={() => handleAssignChore(member.uid)}
-                    style={{
-                      padding: '12px', borderRadius: '10px', border: '1px solid #eee',
-                      background: 'white', display: 'flex', alignItems: 'center', gap: '10px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#eee', overflow: 'hidden' }}>
-                      {member.photoURL ? <img src={member.photoURL} alt={member.name} style={{ width: '100%', height: '100%' }} /> : <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>👤</span>}
-                    </div>
-                    <span style={{ fontWeight: 'bold' }}>{member.name} {member.uid === user.uid && '(Me)'}</span>
-                  </button>
-                ))}
-              </div>
-
-              <button onClick={() => setShowAssignChore(false)} style={{ marginTop: '20px', width: '100%', padding: '10px', background: '#eee', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        )
-      }
-
-      {/* Add Meal Modal (Global) */}
-      {
-        showFoodSelection && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.6)', zIndex: 3000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '20px', backdropFilter: 'blur(8px)'
-          }} onClick={() => setShowFoodSelection(false)}>
-            <div className="card" style={{ width: '100%', maxWidth: '500px', textAlign: 'center', padding: '30px' }} onClick={e => e.stopPropagation()}>
-              <h3 style={{ marginBottom: '25px', fontSize: '22px' }}>{t('what_did_you_eat')}</h3>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '25px' }}>
-                <textarea
-                  value={foodInput}
-                  onChange={(e) => setFoodInput(e.target.value)}
-                  placeholder={t('describe_meal')}
-                  style={{
-                    width: '100%', height: '120px', padding: '15px', borderRadius: '15px',
-                    border: '2px solid #eee', fontSize: '18px', resize: 'none',
-                    background: '#f9f9f9', fontFamily: 'inherit'
-                  }}
-                />
-
-                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    ref={fileInputRef}
-                    style={{ display: 'none' }}
-                    onChange={handleImageSelect}
-                  />
-                  <button
-                    onClick={() => fileInputRef.current.click()}
-                    style={{
-                      background: foodImage ? '#e8f5e9' : '#f5f5f5',
-                      color: foodImage ? '#2e7d32' : '#666',
-                      border: foodImage ? '2px solid #4caf50' : '2px dashed #ccc',
-                      borderRadius: '15px', padding: '15px 30px',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                      fontSize: '16px', fontWeight: '600', width: '100%', cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    <span style={{ fontSize: '24px' }}>{foodImage ? '✅' : '📷'}</span>
-                    <span>{foodImage ? t('image_attached') : t('add_photo')}</span>
-                  </button>
-                </div>
-              </div>
-
-              <button
-                onClick={() => {
-                  handleAnalyzeFood();
-                }}
-                disabled={isAnalyzing || (!foodInput && !foodImage)}
-                style={{
-                  width: '100%', padding: '18px', borderRadius: '18px',
-                  background: (isAnalyzing || (!foodInput && !foodImage)) ? '#e0e0e0' : 'linear-gradient(135deg, #43a047 0%, #66bb6a 100%)',
-                  color: (isAnalyzing || (!foodInput && !foodImage)) ? '#999' : 'white',
-                  border: 'none', fontWeight: 'bold', fontSize: '18px',
-                  cursor: (isAnalyzing || (!foodInput && !foodImage)) ? 'not-allowed' : 'pointer',
-                  boxShadow: (isAnalyzing || (!foodInput && !foodImage)) ? 'none' : '0 10px 20px rgba(67, 160, 71, 0.3)'
-                }}
-              >
-                {isAnalyzing ? t('analyzing') : t('analyze_food')}
-              </button>
-            </div>
-          </div>
-        )
-      }
-
-      {/* Food Analysis Confirmation Modal (Global) */}
-      {
-        analyzedFoodData && (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000,
-            backdropFilter: 'blur(5px)'
-          }} onClick={() => setAnalyzedFoodData(null)}>
-            <div style={{
-              background: 'white', padding: '25px', borderRadius: '20px', width: '90%', maxWidth: '350px',
-              maxHeight: '80vh', overflowY: 'auto'
-            }} onClick={e => e.stopPropagation()}>
-              <h3 style={{ marginTop: 0 }}>{t('confirm_meal')}</h3>
-
-              {analyzedFoodData.image && (
-                <img src={analyzedFoodData.image} alt="Meal" style={{ width: '100%', borderRadius: '12px', marginBottom: '15px', maxHeight: '200px', objectFit: 'cover' }} />
-              )}
-
-              <div style={{ marginBottom: '15px' }}>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#1a1a2e' }}>
-                  {analyzedFoodData.data.totalCalories} cal
-                </div>
-                <div style={{ fontSize: '14px', color: '#666' }}>
-                  {analyzedFoodData.data.totalProtein}g protein
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
-                {analyzedFoodData.data.items?.map((item, idx) => (
-                  <div key={idx} style={{ background: '#f5f7fa', padding: '10px', borderRadius: '8px', fontSize: '14px' }}>
-                    <span style={{ marginRight: '8px' }}>{item.emoji}</span>
-                    <strong>{item.name}</strong>
-                    <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
-                      {item.calories} cal • {item.protein}g protein
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {analyzedFoodData.data.feedback && (
-                <div style={{ fontSize: '13px', color: '#2e7d32', background: '#e8f5e9', padding: '10px', borderRadius: '8px', marginBottom: '20px', fontStyle: 'italic' }}>
-                  "{analyzedFoodData.data.feedback}"
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-                <button
-                  onClick={() => setAnalyzedFoodData({ ...analyzedFoodData, data: { ...analyzedFoodData.data, isHealthy: true } })}
-                  style={{
-                    flex: 1, padding: '10px', borderRadius: '10px', border: '2px solid #4caf50',
-                    background: analyzedFoodData.data.isHealthy ? '#e8f5e9' : 'white',
-                    color: analyzedFoodData.data.isHealthy ? '#2e7d32' : '#666', fontWeight: 'bold', cursor: 'pointer'
-                  }}
-                >
-                  {t('healthy_plus_one')}
-                </button>
-                <button
-                  onClick={() => setAnalyzedFoodData({ ...analyzedFoodData, data: { ...analyzedFoodData.data, isHealthy: false } })}
-                  style={{
-                    flex: 1, padding: '10px', borderRadius: '10px', border: '2px solid #ef5350',
-                    background: !analyzedFoodData.data.isHealthy ? '#ffebee' : 'white',
-                    color: !analyzedFoodData.data.isHealthy ? '#c62828' : '#666', fontWeight: 'bold', cursor: 'pointer'
-                  }}
-                >
-                  {t('junk_minus_one')}
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  onClick={() => setAnalyzedFoodData(null)}
-                  style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: '#eee', fontWeight: 'bold', cursor: 'pointer' }}
-                >
-                  {t('cancel')}
-                </button>
-                <button
-                  onClick={handleConfirmFood}
-                  style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: COLORS.food, color: 'white', fontWeight: 'bold', cursor: 'pointer' }}
-                >
-                  {t('add_meal')}
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      }
-
       {/* Bottom Navigation */}
       < div className="bottom-nav" >
         <div className="bottom-nav-content">
+          <div className={`nav-item ${activeTab === 'home' ? 'active' : ''}`} onClick={() => setActiveTab('home')}>
+            <span className="nav-icon">🏠</span>
+            <span>{t('home')}</span>
+          </div>
+          <div className={`nav-item ${activeTab === 'health' ? 'active' : ''}`} onClick={() => setActiveTab('health')}>
+            <span className="nav-icon">❤️</span>
+            <span>{t('health')}</span>
+          </div>
+          <div className={`nav-item ${activeTab === 'food' ? 'active' : ''}`} onClick={() => setActiveTab('food')}>
+            <span className="nav-icon">🍎</span>
+            <span>{t('food')}</span>
+          </div>
+          <div className={`nav-item ${activeTab === 'chores' ? 'active' : ''}`} onClick={() => setActiveTab('chores')}>
+            <span className="nav-icon">🧹</span>
+            <span>{t('chores')}</span>
+          </div>
           <div className={`nav-item ${activeTab === 'trends' ? 'active' : ''}`} onClick={() => setActiveTab('trends')}>
             <span className="nav-icon">📊</span>
-            <span className="nav-label">{t('trends')}</span>
+            <span>{t('trends')}</span>
           </div>
-          <div className={`nav-item ${activeTab === 'home' ? 'active' : ''}`} onClick={() => setActiveTab('home')} style={{ transform: 'scale(1.2)' }}>
-            <span className="nav-icon" style={{ fontSize: '28px' }}>🏠</span>
-            <span style={{ fontWeight: 'bold' }}>{t('home')}</span>
-          </div>
-          <div className={`nav-item ${activeTab === 'shopping' ? 'active' : ''}`} onClick={() => setActiveTab('shopping')}>
-            <span className="nav-icon">🛒</span>
-            <span className="nav-label">Shop</span>
-          </div>
-          <div className={`nav-item ${showSideMenu ? 'active' : ''}`} onClick={() => setShowSideMenu(true)}>
-            <span className="nav-icon">☰</span>
-            <span className="nav-label">Menu</span>
+          <div className={`nav-item ${activeTab === 'family' ? 'active' : ''}`} onClick={() => setActiveTab('family')}>
+            <span className="nav-icon">👨‍👩‍👧‍👦</span>
+            <span>{t('family')}</span>
           </div>
         </div>
       </div>
@@ -4666,40 +4285,37 @@ function App() {
                 {t('install_ios_2')} <span style={{ fontSize: '16px' }}>➕</span><br />
                 {t('install_ios_3')}
               </div>
-            )
-            }
+            )}
 
 
-            {
-              isAndroid && (
-                deferredPrompt ? (
-                  <button
-                    onClick={async () => {
-                      deferredPrompt.prompt();
-                      const { outcome } = await deferredPrompt.userChoice;
-                      if (outcome === 'accepted') {
-                        setShowInstallPrompt(false);
-                      }
-                      setDeferredPrompt(null);
-                    }}
-                    style={{
-                      background: 'white', color: '#667eea', border: 'none',
-                      padding: '12px 24px', borderRadius: '25px', fontWeight: 'bold',
-                      width: '100%', fontSize: '16px', boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
-                    }}
-                  >
-                    {t('install_now')}
-                  </button>
-                ) : (
-                  <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
-                    {t('install_android_1')} <span style={{ fontSize: '16px' }}>⋮</span><br />
-                    {t('install_android_2')} <span style={{ fontSize: '16px' }}>➕</span><br />
-                    {t('install_android_3')}
-                  </div>
-                )
+            {isAndroid && (
+              deferredPrompt ? (
+                <button
+                  onClick={async () => {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                      setShowInstallPrompt(false);
+                    }
+                    setDeferredPrompt(null);
+                  }}
+                  style={{
+                    background: 'white', color: '#667eea', border: 'none',
+                    padding: '12px 24px', borderRadius: '25px', fontWeight: 'bold',
+                    width: '100%', fontSize: '16px', boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
+                  }}
+                >
+                  {t('install_now')}
+                </button>
+              ) : (
+                <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
+                  {t('install_android_1')} <span style={{ fontSize: '16px' }}>⋮</span><br />
+                  {t('install_android_2')} <span style={{ fontSize: '16px' }}>➕</span><br />
+                  {t('install_android_3')}
+                </div>
               )
-            }
-          </div >
+            )}
+          </div>
         )
       }
       {/* Gazette Modal */}
@@ -4763,8 +4379,6 @@ function App() {
           100% { transform: scale(1); opacity: 1; }
         }
       `}</style>
-      {/* Side Menu */}
-      {showSideMenu && renderSideMenu()}
     </div >
   );
 }

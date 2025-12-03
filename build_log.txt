@@ -1,0 +1,32 @@
+
+> activitytracker@1.3.0 build
+> node generate-version.js && vite build
+
+Version file generated: { version: '1764751131497' }
+vite v7.2.4 building client environment for production...
+transforming...
+✓ 6 modules transformed.
+✗ Build failed in 119ms
+error during build:
+[vite:esbuild] Transform failed with 1 error:
+/Users/ofer.regev/Documents/workspace/activitytracker/src/App.jsx:102:6: ERROR: The symbol "getChoreDesign" has already been declared
+file: /Users/ofer.regev/Documents/workspace/activitytracker/src/App.jsx:102:6
+
+The symbol "getChoreDesign" has already been declared
+100 |  
+101 |  // Fun Chore Designs
+102 |  const getChoreDesign = (chore) => {
+    |        ^
+103 |    const name = typeof chore === 'string' ? chore : chore.name;
+104 |    const category = typeof chore === 'object' ? chore.category : null;
+
+    at failureErrorWithLog (/Users/ofer.regev/Documents/workspace/activitytracker/node_modules/esbuild/lib/main.js:1467:15)
+    at /Users/ofer.regev/Documents/workspace/activitytracker/node_modules/esbuild/lib/main.js:736:50
+    at responseCallbacks.<computed> (/Users/ofer.regev/Documents/workspace/activitytracker/node_modules/esbuild/lib/main.js:603:9)
+    at handleIncomingPacket (/Users/ofer.regev/Documents/workspace/activitytracker/node_modules/esbuild/lib/main.js:658:12)
+    at Socket.readFromStdout (/Users/ofer.regev/Documents/workspace/activitytracker/node_modules/esbuild/lib/main.js:581:7)
+    at Socket.emit (node:events:507:28)
+    at addChunk (node:internal/streams/readable:559:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+    at Readable.push (node:internal/streams/readable:390:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)

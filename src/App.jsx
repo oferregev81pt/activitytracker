@@ -11,6 +11,7 @@ import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, Legend, Responsi
 import { getGenerativeModel } from "firebase/ai";
 import ReactMarkdown from 'react-markdown';
 import './App.css'
+import { ChevronRight, Plus, Check, MoreVertical, Trash2, X, Search } from 'lucide-react';
 import { translations } from './translations';
 import { encryptData, decryptData } from './security';
 import { changelogVersions } from './changelog-data';
@@ -104,6 +105,27 @@ const getChoreDesign = (chore) => {
   return design;
 };
 
+// Shopping Categories
+const SHOPPING_CATEGORIES = {
+  produce: { label: 'Produce', keywords: ['apple', 'banana', 'carrot', 'lettuce', 'tomato', 'fruit', 'veg', 'onion', 'potato', 'cucumber', 'pepper', 'spinach', 'berry', 'grape', 'lemon', 'lime', 'orange', 'pear', 'peach', 'plum', 'melon', 'avocado', 'corn', 'broccoli', 'cauliflower', 'cabbage', 'mushroom', 'garlic', 'ginger', 'herb', 'basil', 'parsley', 'cilantro', 'mint', 'dill', 'rosemary', 'thyme', 'oregano', 'sage', 'chive', 'scallion', 'leek', 'celery', 'asparagus', 'bean', 'pea', 'squash', 'zucchini', 'eggplant', 'pumpkin', 'radish', 'beet', 'turnip', 'kale', 'chard', 'arugula', 'salad', 'greens', 'sprout'] },
+  dairy: { label: 'Dairy & Eggs', keywords: ['milk', 'cheese', 'yogurt', 'butter', 'cream', 'egg', 'margarine', 'curd', 'whey', 'casein', 'lactose', 'kefir', 'ghee', 'custard', 'pudding', 'ice cream', 'gelato', 'sherbet', 'sorbet', 'mousse', 'souffle', 'quiche', 'omelet', 'frittata', 'scramble', 'mayo', 'mayonnaise', 'aioli', 'ranch', 'caesar', 'blue cheese', 'feta', 'mozzarella', 'cheddar', 'swiss', 'provolone', 'gouda', 'brie', 'camembert', 'parmesan', 'romano', 'ricotta', 'cottage cheese', 'cream cheese', 'sour cream', 'whipped cream', 'half and half', 'buttermilk'] },
+  bakery: { label: 'Bakery', keywords: ['bread', 'bagel', 'bun', 'roll', 'pita', 'tortilla', 'wrap', 'croissant', 'muffin', 'scone', 'biscuit', 'cookie', 'cake', 'pie', 'tart', 'pastry', 'donut', 'brownie', 'cupcake', 'pancake', 'waffle', 'toast', 'crust', 'dough', 'batter', 'flour', 'yeast', 'baking', 'powder', 'soda', 'sugar', 'honey', 'syrup', 'molasses', 'agave', 'stevia', 'sweetener', 'chocolate', 'cocoa', 'vanilla', 'extract', 'spice', 'salt', 'pepper', 'oil', 'vinegar', 'sauce', 'condiment', 'jam', 'jelly', 'preserve', 'spread', 'nut', 'seed', 'grain', 'rice', 'pasta', 'noodle', 'cereal', 'oat', 'granola', 'muesli', 'bar', 'snack', 'cracker', 'chip', 'pretzel', 'popcorn', 'candy', 'gum', 'mint'] },
+  meat: { label: 'Meat & Fish', keywords: ['chicken', 'beef', 'pork', 'lamb', 'turkey', 'duck', 'goose', 'fish', 'salmon', 'tuna', 'cod', 'trout', 'shrimp', 'crab', 'lobster', 'clam', 'mussel', 'oyster', 'scallop', 'squid', 'octopus', 'steak', 'chop', 'roast', 'rib', 'wing', 'thigh', 'breast', 'leg', 'ground', 'mince', 'sausage', 'bacon', 'ham', 'salami', 'pepperoni', 'prosciutto', 'chorizo', 'hot dog', 'burger', 'meatball', 'kebab', 'skewer', 'jerky', 'deli', 'lunch meat', 'cold cut', 'pate', 'terrine', 'foie gras', 'liver', 'kidney', 'heart', 'tongue', 'tripe', 'bone', 'broth', 'stock', 'bouillon', 'soup', 'stew', 'chili', 'curry'] },
+  frozen: { label: 'Frozen', keywords: ['frozen', 'ice', 'pizza', 'meal', 'dinner', 'entree', 'appetizer', 'snack', 'dessert', 'fruit', 'vegetable', 'juice', 'waffle', 'pancake', 'breakfast', 'burrito', 'pocket', 'pie', 'crust', 'dough', 'pastry', 'bread', 'roll', 'bun', 'bagel', 'pretzel', 'potato', 'fry', 'tot', 'hash brown', 'onion ring', 'stick', 'nugget', 'tender', 'strip', 'patty', 'burger', 'meatball', 'sausage', 'bacon', 'seafood', 'fish', 'shrimp', 'chicken', 'beef', 'pork', 'lamb', 'turkey', 'duck', 'goose', 'meat', 'poultry', 'game', 'veggie', 'vegan', 'vegetarian', 'plant', 'substitute', 'alternative'] },
+  household: { label: 'Household', keywords: ['soap', 'detergent', 'cleaner', 'bleach', 'sponge', 'towel', 'tissue', 'paper', 'napkin', 'plate', 'cup', 'fork', 'spoon', 'knife', 'cutlery', 'utensil', 'bag', 'wrap', 'foil', 'container', 'storage', 'trash', 'garbage', 'bin', 'can', 'liner', 'battery', 'bulb', 'light', 'candle', 'match', 'lighter', 'air', 'freshener', 'spray', 'plug', 'oil', 'diffuser', 'insect', 'bug', 'pest', 'control', 'trap', 'bait', 'poison', 'repellent', 'killer', 'swatter', 'zapper', 'net', 'screen', 'door', 'window', 'floor', 'carpet', 'rug', 'mat', 'tile', 'grout', 'wood', 'furniture', 'polish', 'wax', 'dust', 'mop', 'broom', 'brush', 'pan', 'bucket', 'glove', 'mask', 'safety', 'first aid', 'medicine', 'vitamin', 'supplement', 'pill', 'tablet', 'capsule', 'drop', 'syrup', 'cream', 'lotion', 'ointment', 'gel', 'spray', 'patch', 'bandage', 'gauze', 'tape', 'wrap', 'brace', 'support', 'crutch', 'cane', 'walker', 'wheelchair', 'bed', 'pan', 'urinal', 'commode', 'seat', 'chair', 'lift', 'ramp', 'rail', 'bar', 'handle', 'knob', 'lock', 'key', 'chain', 'rope', 'cord', 'wire', 'cable', 'hose', 'pipe', 'tube', 'fitting', 'connector', 'adapter', 'plug', 'switch', 'outlet', 'socket', 'bulb', 'lamp', 'fixture', 'fan', 'heater', 'cooler', 'ac', 'filter', 'vent', 'duct', 'insulation', 'seal', 'caulk', 'glue', 'tape', 'adhesive', 'nail', 'screw', 'bolt', 'nut', 'washer', 'anchor', 'hook', 'hanger', 'bracket', 'brace', 'plate', 'sheet', 'rod', 'bar', 'beam', 'board', 'plank', 'panel', 'tile', 'brick', 'block', 'stone', 'rock', 'sand', 'gravel', 'dirt', 'soil', 'mulch', 'compost', 'fertilizer', 'seed', 'plant', 'flower', 'tree', 'shrub', 'bush', 'grass', 'sod', 'turf', 'weed', 'moss', 'algae', 'fungus', 'mold', 'mildew', 'rot', 'rust', 'corrosion', 'scale', 'lime', 'calcium', 'mineral', 'deposit', 'stain', 'spot', 'mark', 'scratch', 'dent', 'chip', 'crack', 'break', 'tear', 'rip', 'hole', 'leak', 'drip', 'clog', 'block', 'jam', 'stuck', 'loose', 'wobbly', 'squeaky', 'noisy', 'loud', 'quiet', 'silent', 'dead', 'broken', 'damaged', 'defective', 'faulty', 'malfunction', 'error', 'fail', 'crash', 'freeze', 'hang', 'slow', 'fast', 'quick', 'speed', 'velocity', 'rate', 'pace', 'tempo', 'rhythm', 'beat', 'pulse', 'cycle', 'phase', 'stage', 'step', 'level', 'grade', 'rank', 'tier', 'class', 'group', 'set', 'batch', 'lot', 'collection', 'series', 'sequence', 'order', 'arrangement', 'pattern', 'design', 'style', 'type', 'kind', 'sort', 'form', 'shape', 'size', 'dimension', 'measure', 'weight', 'volume', 'capacity', 'quantity', 'amount', 'number', 'count', 'total', 'sum', 'average', 'mean', 'median', 'mode', 'range', 'variance', 'deviation', 'error', 'uncertainty', 'confidence', 'probability', 'chance', 'likelihood', 'odds', 'risk', 'hazard', 'danger', 'threat', 'safety', 'security', 'protection', 'defense', 'guard', 'shield', 'cover', 'shelter', 'refuge', 'sanctuary', 'haven', 'asylum', 'retreat', 'escape', 'exit', 'way', 'route', 'path', 'track', 'trail', 'road', 'street', 'avenue', 'boulevard', 'lane', 'drive', 'court', 'place', 'square', 'circle', 'loop', 'ring', 'round', 'turn', 'curve', 'bend', 'corner', 'angle', 'edge', 'side', 'face', 'surface', 'plane', 'flat', 'level', 'smooth', 'rough', 'hard', 'soft', 'wet', 'dry', 'hot', 'cold', 'warm', 'cool', 'fresh', 'stale', 'rotten', 'spoiled', 'bad', 'good', 'better', 'best', 'worst', 'fine', 'okay', 'great', 'excellent', 'perfect', 'ideal', 'optimal', 'prime', 'supreme', 'ultimate', 'absolute', 'total', 'complete', 'full', 'empty', 'blank', 'void', 'null', 'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'] },
+  other: { label: 'Other', keywords: [] }
+};
+
+const categorizeItem = (name) => {
+  const lowerName = name.toLowerCase();
+  for (const [key, category] of Object.entries(SHOPPING_CATEGORIES)) {
+    if (category.keywords.some(k => lowerName.includes(k))) {
+      return key;
+    }
+  }
+  return 'other';
+};
+
 // Version check removed to prevent loops
 function App() {
   const logAppEvent = (eventName, params = {}) => {
@@ -175,6 +197,27 @@ function App() {
 
   // AI Chef & Shopping List State
   const [shoppingList, setShoppingList] = useState([]);
+  const [showShoppingInput, setShowShoppingInput] = useState(false);
+
+  const groupedShoppingList = useMemo(() => {
+    const groups = {};
+    // Initialize groups based on SHOPPING_CATEGORIES order
+    Object.keys(SHOPPING_CATEGORIES).forEach(key => {
+      groups[key] = [];
+    });
+
+    shoppingList.forEach(item => {
+      const category = item.category || categorizeItem(item.name);
+      if (groups[category]) {
+        groups[category].push(item);
+      } else {
+        groups['other'].push(item);
+      }
+    });
+
+    return groups;
+  }, [shoppingList]);
+  const [showAddItem, setShowAddItem] = useState(false);
   const [suggestedRecipe, setSuggestedRecipe] = useState(null);
   const [isSuggestingRecipe, setIsSuggestingRecipe] = useState(false);
 
@@ -547,8 +590,10 @@ function App() {
 
   const handleAddManualShoppingItem = async (name) => {
     if (!groupCode || !name.trim()) return;
+    const category = categorizeItem(name);
     await addDoc(collection(db, 'groups', groupCode, 'shoppingList'), {
       name: name.trim(),
+      category,
       checked: false,
       addedBy: user.uid,
       createdAt: new Date().toISOString()
@@ -3945,68 +3990,162 @@ function App() {
 
           {
             activeTab === 'shopping' && (
-              <div className="card">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
-                  <h3 style={{ margin: 0 }}>Shopping List 🛒</h3>
-                  <span style={{ fontSize: '12px', color: '#888', background: '#f5f5f5', padding: '2px 8px', borderRadius: '10px' }}>
-                    {shoppingList.filter(i => !i.checked).length} items
-                  </span>
+              <div className="animate-fade-in" style={{ paddingBottom: '80px' }}>
+                {/* Sticky Header */}
+                <div style={{
+                  position: 'sticky', top: 0, zIndex: 50,
+                  background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(12px)',
+                  padding: '15px 20px', margin: '-20px -20px 20px -20px',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  borderBottom: '1px solid rgba(255,255,255,0.5)'
+                }}>
+                  <h3 style={{ margin: 0, color: '#1a1a2e', fontSize: '20px' }}>Grocery List</h3>
+                  <button style={{ fontSize: '20px', color: '#1a1a2e', background: 'none', border: 'none' }}>⋮</button>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                  <input
-                    type="text"
-                    placeholder="Add item..."
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleAddManualShoppingItem(e.target.value);
-                        e.target.value = '';
-                      }
-                    }}
-                    style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ddd', background: '#f9f9f9' }}
-                  />
-                </div>
+                {/* Categorized Lists */}
+                {Object.entries(groupedShoppingList).map(([category, items]) => {
+                  if (items.length === 0) return null;
+                  const catInfo = SHOPPING_CATEGORIES[category] || { label: category };
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '600px', overflowY: 'auto' }}>
-                  {shoppingList.length === 0 && <p style={{ color: '#ccc', textAlign: 'center', fontSize: '14px' }}>List is empty</p>}
-                  {shoppingList.map(item => (
-                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', background: item.checked ? '#f0f0f0' : 'white', borderRadius: '8px', borderBottom: '1px solid #eee' }}>
-                      <input
-                        type="checkbox"
-                        checked={item.checked}
-                        onChange={() => handleToggleShoppingItem(item.id, item.checked)}
-                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                      />
+                  return (
+                    <div key={category} style={{ marginBottom: '25px' }}>
+                      {/* Category Header */}
+                      <div style={{
+                        position: 'sticky', top: '60px', zIndex: 40,
+                        background: 'rgba(245, 247, 250, 0.9)', backdropFilter: 'blur(8px)',
+                        padding: '8px 0', marginBottom: '10px',
+                        fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', color: '#4f46e5', letterSpacing: '1px'
+                      }}>
+                        {catInfo.label}
+                      </div>
 
-                      {editingShoppingItem === item.id ? (
-                        <div style={{ flex: 1, display: 'flex', gap: '5px' }}>
-                          <input
-                            type="text"
-                            value={editingShoppingText}
-                            onChange={(e) => setEditingShoppingText(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleUpdateShoppingItem()}
-                            autoFocus
-                            style={{ flex: 1, padding: '4px', borderRadius: '4px', border: '1px solid #42a5f5' }}
-                          />
-                          <button onClick={handleUpdateShoppingItem} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>✅</button>
-                          <button onClick={() => setEditingShoppingItem(null)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>❌</button>
-                        </div>
-                      ) : (
-                        <span
-                          onClick={() => {
-                            setEditingShoppingItem(item.id);
-                            setEditingShoppingText(item.name);
-                          }}
-                          style={{ flex: 1, textDecoration: item.checked ? 'line-through' : 'none', color: item.checked ? '#aaa' : '#333', cursor: 'text' }}
-                        >
-                          {item.name}
-                        </span>
-                      )}
+                      {/* Glass Card Container */}
+                      <div style={{
+                        background: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(12px)',
+                        borderRadius: '20px', overflow: 'hidden',
+                        border: '1px solid rgba(255, 255, 255, 0.5)',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)'
+                      }}>
+                        {items.map((item, index) => (
+                          <div key={item.id} style={{
+                            display: 'flex', alignItems: 'center', padding: '16px',
+                            borderBottom: index < items.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none',
+                            transition: 'background 0.2s'
+                          }}>
+                            {/* Custom Checkbox */}
+                            <div
+                              onClick={() => handleToggleShoppingItem(item.id, item.checked)}
+                              style={{
+                                width: '24px', height: '24px', borderRadius: '50%',
+                                border: item.checked ? 'none' : '2px solid #4f46e5',
+                                background: item.checked ? '#4f46e5' : 'transparent',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                marginRight: '16px', cursor: 'pointer', flexShrink: 0,
+                                transition: 'all 0.2s ease'
+                              }}
+                            >
+                              {item.checked && <span style={{ color: 'white', fontSize: '14px' }}>✓</span>}
+                            </div>
 
-                      <button onClick={() => handleDeleteShoppingItem(item.id)} style={{ color: '#ff5252', fontSize: '18px', padding: '0 5px', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+                            {/* Text */}
+                            <div style={{ flex: 1, overflow: 'hidden' }}>
+                              <span style={{
+                                fontSize: '16px',
+                                color: item.checked ? '#94a3b8' : '#334155',
+                                textDecoration: item.checked ? 'line-through' : 'none',
+                                transition: 'all 0.2s ease',
+                                display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                              }}>
+                                {item.name}
+                              </span>
+                            </div>
+
+                            {/* Chevron / Actions */}
+                            {!item.checked && (
+                              <button
+                                onClick={() => {
+                                  setEditingShoppingItem(item.id);
+                                  setEditingShoppingText(item.name);
+                                }}
+                                style={{ color: '#cbd5e1', fontSize: '20px', background: 'none', border: 'none' }}
+                              >
+                                ›
+                              </button>
+                            )}
+                            {item.checked && (
+                              <button onClick={() => handleDeleteShoppingItem(item.id)} style={{ color: '#ff5252', fontSize: '18px', padding: '0 5px', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
+
+                {/* Empty State */}
+                {shoppingList.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '10px', opacity: 0.5 }}>🛒</div>
+                    <p>Your grocery list is empty.</p>
+                    <p style={{ fontSize: '12px', marginTop: '5px' }}>Tap the + button to add items.</p>
+                  </div>
+                )}
+
+                {/* FAB */}
+                <button
+                  onClick={() => setShowShoppingInput(true)}
+                  style={{
+                    position: 'fixed', bottom: '100px', right: '20px',
+                    width: '56px', height: '56px', borderRadius: '50%',
+                    background: '#4f46e5', color: 'white',
+                    boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '32px', border: 'none', cursor: 'pointer',
+                    zIndex: 100, transition: 'transform 0.1s'
+                  }}
+                >
+                  +
+                </button>
+
+                {/* Input Overlay */}
+                {showShoppingInput && (
+                  <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.2)', backdropFilter: 'blur(4px)',
+                    zIndex: 200, display: 'flex', alignItems: 'flex-end'
+                  }} onClick={() => setShowShoppingInput(false)}>
+                    <div
+                      onClick={e => e.stopPropagation()}
+                      style={{
+                        width: '100%', background: 'white', padding: '20px',
+                        borderTopLeftRadius: '20px', borderTopRightRadius: '20px',
+                        boxShadow: '0 -4px 20px rgba(0,0,0,0.1)',
+                        animation: 'slideUp 0.3s ease-out'
+                      }}
+                    >
+                      <input
+                        autoFocus
+                        type="text"
+                        placeholder="Add item (e.g. Milk)..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleAddManualShoppingItem(e.target.value);
+                            e.target.value = '';
+                            // Keep input open for multiple items
+                          }
+                        }}
+                        style={{
+                          width: '100%', padding: '15px', fontSize: '18px', border: 'none',
+                          borderBottom: '2px solid #4f46e5', outline: 'none', background: 'transparent'
+                        }}
+                      />
+                      <div style={{ marginTop: '10px', fontSize: '12px', color: '#888', textAlign: 'right' }}>
+                        Press Enter to add
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )
           }

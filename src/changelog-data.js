@@ -1,6 +1,13 @@
 // Auto-generated from CHANGELOG.md - Do not edit manually
 export const changelogVersions = [
   {
+    "version": "1.5.4",
+    "date": "2025-12-03",
+    "changes": [
+      "Daily Goals: Included \"Chores\" in the daily goal progress donut chart calculation and visualization"
+    ]
+  },
+  {
     "version": "1.5.3",
     "date": "2025-12-03",
     "changes": [
@@ -26,21 +33,6 @@ export const changelogVersions = [
       "Dynamic Changelog Display: What's New section now automatically updates when CHANGELOG.md is modified",
       "Build Process: Added `generate-changelog.js` script to build pipeline",
       "What's New UI: Replaced hardcoded version cards with dynamic rendering from changelog data"
-    ]
-  },
-  {
-    "version": "1.5.0",
-    "date": "2025-12-03",
-    "changes": [
-      "Comprehensive Hebrew Translations: Added 100+ translation keys covering all major UI elements",
-      "What's New from CHANGELOG: Dynamic version-based sections with color-coded cards showing update history",
-      "Desktop Responsiveness: Increased max-width from 480px to 768px for better tablet/desktop experience",
-      "UI Spacing Improvements: Reduced spacing between carousel and streak, improved overall layout density",
-      "Translation Coverage: Side menu, navigation, settings, profile, chat, shopping, leaderboard all fully bilingual",
-      "Header Behavior: Dynamic header titles that change based on active settings page",
-      "Login Error: Added missing handleGoogleLogin function",
-      "Scroll Issues: Fixed overflow and scroll behavior across all pages",
-      "Header Icons: Removed redundant refresh and settings icons from header"
     ]
   }
 ];

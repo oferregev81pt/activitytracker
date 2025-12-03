@@ -198,6 +198,8 @@ function App() {
   // AI Chef & Shopping List State
   const [shoppingList, setShoppingList] = useState([]);
   const [newItemText, setNewItemText] = useState('');
+  const [foodScope, setFoodScope] = useState('me');
+  const [foodRange, setFoodRange] = useState('day');
 
   const handleAddItem = () => {
     if (newItemText.trim()) {
@@ -2853,6 +2855,128 @@ function App() {
                         <div style={{ fontSize: '11px', color: '#888', marginTop: '2px', textAlign: 'right' }}>
                           {Math.max(0, dailyProteinTarget - myStats.protein)}g remaining
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Food Breakdown Chart */}
+                    <div className="card" style={{ padding: '20px', marginBottom: '15px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                        <h4 style={{ margin: 0 }}>Food Breakdown</h4>
+                        {/* Scope Switcher */}
+                        <div style={{ display: 'flex', background: '#f5f5f5', borderRadius: '8px', padding: '2px' }}>
+                          {['me', 'everyone'].map(scope => (
+                            <button
+                              key={scope}
+                              onClick={() => setFoodScope(scope)}
+                              style={{
+                                padding: '4px 10px', borderRadius: '6px', fontSize: '12px',
+                                background: foodScope === scope ? 'white' : 'transparent',
+                                boxShadow: foodScope === scope ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                                color: foodScope === scope ? '#333' : '#888'
+                              }}
+                            >
+                              {scope === 'me' ? 'Me' : 'All'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Range Switcher */}
+                      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px', gap: '5px' }}>
+                        {['day', 'week', 'month', 'all'].map(range => (
+                          <button
+                            key={range}
+                            onClick={() => setFoodRange(range)}
+                            style={{
+                              padding: '6px 12px', borderRadius: '20px', fontSize: '12px',
+                              background: foodRange === range ? '#43a047' : '#f0f0f0',
+                              color: foodRange === range ? 'white' : '#666',
+                              fontWeight: foodRange === range ? 'bold' : 'normal'
+                            }}
+                          >
+                            {range.charAt(0).toUpperCase() + range.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Chart */}
+                      <div style={{ height: '200px', width: '100%' }}>
+                        {(() => {
+                          // Filter activities
+                          const filteredFood = activities.filter(a => {
+                            if (a.type !== 'food') return false;
+                            if (foodScope === 'me' && a.userId !== user.uid) return false;
+
+                            const date = new Date(a.timestamp);
+                            const now = new Date();
+                            if (foodRange === 'day') return getIsraelDateString(date) === getIsraelDateString(now);
+                            if (foodRange === 'week') {
+                              const oneWeekAgo = new Date();
+                              oneWeekAgo.setDate(now.getDate() - 7);
+                              return date >= oneWeekAgo;
+                            }
+                            if (foodRange === 'month') {
+                              const oneMonthAgo = new Date();
+                              oneMonthAgo.setMonth(now.getMonth() - 1);
+                              return date >= oneMonthAgo;
+                            }
+                            return true;
+                          });
+
+                          // Classify
+                          let healthy = 0;
+                          let junk = 0;
+                          let sweet = 0;
+
+                          filteredFood.forEach(a => {
+                            const isHealthy = a.details?.isHealthy;
+                            const name = (a.details?.name || a.input || '').toLowerCase();
+
+                            if (isHealthy) {
+                              healthy++;
+                            } else {
+                              // Unhealthy - check if sweet
+                              const sweets = ['cake', 'cookie', 'chocolate', 'candy', 'ice cream', 'dessert', 'sugar', 'sweet', 'donut', 'pastry', 'pie', 'tart', 'brownie', 'cupcake', 'pudding', 'soda', 'cola', 'juice', 'עוגה', 'עוגיה', 'שוקולד', 'ממתק', 'גלידה', 'קינוח', 'סוכר', 'מתוק'];
+                              if (sweets.some(s => name.includes(s))) {
+                                sweet++;
+                              } else {
+                                junk++;
+                              }
+                            }
+                          });
+
+                          const data = [
+                            { name: 'Healthy', value: healthy, color: '#66bb6a' },
+                            { name: 'Junk', value: junk, color: '#ef5350' },
+                            { name: 'Sweet', value: sweet, color: '#ab47bc' }
+                          ].filter(d => d.value > 0);
+
+                          if (data.length === 0) {
+                            return <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>No data</div>;
+                          }
+
+                          return (
+                            <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                <Pie
+                                  data={data}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={60}
+                                  outerRadius={80}
+                                  paddingAngle={5}
+                                  dataKey="value"
+                                >
+                                  {data.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                  ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          );
+                        })()}
                       </div>
                     </div>
 

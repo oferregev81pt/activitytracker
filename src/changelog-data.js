@@ -1,6 +1,19 @@
 // Auto-generated from CHANGELOG.md - Do not edit manually
 export const changelogVersions = [
   {
+    "version": "1.6.0",
+    "date": "2025-12-03",
+    "changes": [
+      "Carousel Home: New circular navigation for Home screen with dynamic action area.",
+      "Smart Shopping List: \"Glassmorphism\" UI, sticky headers, and auto-categorization using Gemini AI.",
+      "Inline Input: Google Keep-style fixed bottom input bar for Shopping List.",
+      "Feedback: Added feedback form link to side menu.",
+      "Recent History: Added category-specific recent history to Home screen.",
+      "Home Layout: Removed summary cards to focus on the active task.",
+      "Shopping UI: Moved \"Add\" button to bottom-left for better mobile ergonomics."
+    ]
+  },
+  {
     "version": "1.5.4",
     "date": "2025-12-03",
     "changes": [
@@ -23,16 +36,6 @@ export const changelogVersions = [
       "iOS Improvements: Fixed \"Add Meal\" modal visibility and scrolling on iOS devices",
       "Language Settings: Language preference is now saved and persists across app reloads",
       "Activity Logs: Added icons to activity log entries for better readability"
-    ]
-  },
-  {
-    "version": "1.5.1",
-    "date": "2025-12-03",
-    "changes": [
-      "Auto-Generated What's New: Created build-time script that automatically generates What's New content from CHANGELOG.md",
-      "Dynamic Changelog Display: What's New section now automatically updates when CHANGELOG.md is modified",
-      "Build Process: Added `generate-changelog.js` script to build pipeline",
-      "What's New UI: Replaced hardcoded version cards with dynamic rendering from changelog data"
     ]
   }
 ];

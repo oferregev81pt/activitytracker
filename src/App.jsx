@@ -219,7 +219,7 @@ function App() {
       Exclude common pantry items like salt, pepper, oil unless critical.
       Return JSON: { "items": [{ "name": "Pasta", "category": "household" }] }.
       Categories: vegetables, fruits, dairy, bakery, meat, frozen, household, other.
-      Output Language: ${language === 'he' ? 'Hebrew' : 'English'}`;
+      IMPORTANT: Detect the language of the user's input ("${chefInput}"). Output the item names in that SAME language.`;
 
       const result = await model.generateContent(prompt);
       const text = result.response.text().replace(/```json|```/g, '').trim();
@@ -258,7 +258,7 @@ function App() {
       Do NOT suggest items already on the list.
       Return JSON: { "items": [{ "name": "Milk", "category": "dairy" }] }.
       Categories: vegetables, fruits, dairy, bakery, meat, frozen, household, other.
-      Output Language: ${language === 'he' ? 'Hebrew' : 'English'}`;
+      IMPORTANT: Detect the dominant language of the input lists. Output the item names in that DOMINANT language.`;
 
       const result = await model.generateContent(prompt);
       const text = result.response.text().replace(/```json|```/g, '').trim();

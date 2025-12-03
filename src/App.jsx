@@ -107,7 +107,8 @@ const getChoreDesign = (chore) => {
 
 // Shopping Categories
 const SHOPPING_CATEGORIES = {
-  produce: { label: 'Produce', keywords: ['apple', 'banana', 'carrot', 'lettuce', 'tomato', 'fruit', 'veg', 'onion', 'potato', 'cucumber', 'pepper', 'spinach', 'berry', 'grape', 'lemon', 'lime', 'orange', 'pear', 'peach', 'plum', 'melon', 'avocado', 'corn', 'broccoli', 'cauliflower', 'cabbage', 'mushroom', 'garlic', 'ginger', 'herb', 'basil', 'parsley', 'cilantro', 'mint', 'dill', 'rosemary', 'thyme', 'oregano', 'sage', 'chive', 'scallion', 'leek', 'celery', 'asparagus', 'bean', 'pea', 'squash', 'zucchini', 'eggplant', 'pumpkin', 'radish', 'beet', 'turnip', 'kale', 'chard', 'arugula', 'salad', 'greens', 'sprout'] },
+  vegetables: { label: 'Vegetables 🥦', keywords: ['carrot', 'lettuce', 'tomato', 'veg', 'onion', 'potato', 'cucumber', 'pepper', 'spinach', 'corn', 'broccoli', 'cauliflower', 'cabbage', 'mushroom', 'garlic', 'ginger', 'herb', 'basil', 'parsley', 'cilantro', 'mint', 'dill', 'rosemary', 'thyme', 'oregano', 'sage', 'chive', 'scallion', 'leek', 'celery', 'asparagus', 'bean', 'pea', 'squash', 'zucchini', 'eggplant', 'pumpkin', 'radish', 'beet', 'turnip', 'kale', 'chard', 'arugula', 'salad', 'greens', 'sprout', 'avocado'] },
+  fruits: { label: 'Fruits 🍎', keywords: ['apple', 'banana', 'fruit', 'berry', 'grape', 'lemon', 'lime', 'orange', 'pear', 'peach', 'plum', 'melon', 'watermelon', 'cantaloupe', 'honeydew', 'cherry', 'strawberry', 'blueberry', 'raspberry', 'blackberry', 'mango', 'pineapple', 'papaya', 'kiwi', 'fig', 'date', 'pomegranate', 'apricot', 'nectarine', 'coconut'] },
   dairy: { label: 'Dairy & Eggs', keywords: ['milk', 'cheese', 'yogurt', 'butter', 'cream', 'egg', 'margarine', 'curd', 'whey', 'casein', 'lactose', 'kefir', 'ghee', 'custard', 'pudding', 'ice cream', 'gelato', 'sherbet', 'sorbet', 'mousse', 'souffle', 'quiche', 'omelet', 'frittata', 'scramble', 'mayo', 'mayonnaise', 'aioli', 'ranch', 'caesar', 'blue cheese', 'feta', 'mozzarella', 'cheddar', 'swiss', 'provolone', 'gouda', 'brie', 'camembert', 'parmesan', 'romano', 'ricotta', 'cottage cheese', 'cream cheese', 'sour cream', 'whipped cream', 'half and half', 'buttermilk'] },
   bakery: { label: 'Bakery', keywords: ['bread', 'bagel', 'bun', 'roll', 'pita', 'tortilla', 'wrap', 'croissant', 'muffin', 'scone', 'biscuit', 'cookie', 'cake', 'pie', 'tart', 'pastry', 'donut', 'brownie', 'cupcake', 'pancake', 'waffle', 'toast', 'crust', 'dough', 'batter', 'flour', 'yeast', 'baking', 'powder', 'soda', 'sugar', 'honey', 'syrup', 'molasses', 'agave', 'stevia', 'sweetener', 'chocolate', 'cocoa', 'vanilla', 'extract', 'spice', 'salt', 'pepper', 'oil', 'vinegar', 'sauce', 'condiment', 'jam', 'jelly', 'preserve', 'spread', 'nut', 'seed', 'grain', 'rice', 'pasta', 'noodle', 'cereal', 'oat', 'granola', 'muesli', 'bar', 'snack', 'cracker', 'chip', 'pretzel', 'popcorn', 'candy', 'gum', 'mint'] },
   meat: { label: 'Meat & Fish', keywords: ['chicken', 'beef', 'pork', 'lamb', 'turkey', 'duck', 'goose', 'fish', 'salmon', 'tuna', 'cod', 'trout', 'shrimp', 'crab', 'lobster', 'clam', 'mussel', 'oyster', 'scallop', 'squid', 'octopus', 'steak', 'chop', 'roast', 'rib', 'wing', 'thigh', 'breast', 'leg', 'ground', 'mince', 'sausage', 'bacon', 'ham', 'salami', 'pepperoni', 'prosciutto', 'chorizo', 'hot dog', 'burger', 'meatball', 'kebab', 'skewer', 'jerky', 'deli', 'lunch meat', 'cold cut', 'pate', 'terrine', 'foie gras', 'liver', 'kidney', 'heart', 'tongue', 'tripe', 'bone', 'broth', 'stock', 'bouillon', 'soup', 'stew', 'chili', 'curry'] },
@@ -217,7 +218,7 @@ function App() {
       List essential ingredients for a shopping list. 
       Exclude common pantry items like salt, pepper, oil unless critical.
       Return JSON: { "items": [{ "name": "Pasta", "category": "household" }] }.
-      Categories: produce, dairy, bakery, meat, frozen, household, other.
+      Categories: vegetables, fruits, dairy, bakery, meat, frozen, household, other.
       Output Language: ${language === 'he' ? 'Hebrew' : 'English'}`;
 
       const result = await model.generateContent(prompt);
@@ -256,7 +257,7 @@ function App() {
       Suggest 3-5 items they likely need to replenish based on habits (e.g. coffee, milk, bread, eggs).
       Do NOT suggest items already on the list.
       Return JSON: { "items": [{ "name": "Milk", "category": "dairy" }] }.
-      Categories: produce, dairy, bakery, meat, frozen, household, other.
+      Categories: vegetables, fruits, dairy, bakery, meat, frozen, household, other.
       Output Language: ${language === 'he' ? 'Hebrew' : 'English'}`;
 
       const result = await model.generateContent(prompt);
@@ -685,7 +686,7 @@ function App() {
   const categorizeWithGemini = async (itemId, itemName) => {
     try {
       const model = getGenerativeModel(ai, { model: "gemini-2.0-flash" });
-      const prompt = `Categorize this shopping item into one of these categories: produce, dairy, bakery, meat, frozen, household, other. Item: "${itemName}". Return ONLY the category key (lowercase).`;
+      const prompt = `Categorize this shopping item into one of these categories: vegetables, fruits, dairy, bakery, meat, frozen, household, other. Item: "${itemName}". Return ONLY the category key (lowercase).`;
 
       const result = await model.generateContent(prompt);
       const category = result.response.text().trim().toLowerCase();

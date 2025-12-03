@@ -2399,50 +2399,63 @@ function App() {
                 </div>
 
                 {/* Orbiting Icons */}
-                {['pee', 'poo', 'drink', 'food', 'chore'].map((type, index) => {
-                  // Arc Layout: Top-Left to Top-Right
-                  // Pee (Left), Poo (Top-Left), Drink (Top), Food (Top-Right), Chore (Right)
-                  const angles = {
-                    pee: 180,   // Left
-                    poo: 225,   // Top-Left
-                    drink: 270, // Top
-                    food: 315,  // Top-Right
-                    chore: 0    // Right
+                {(() => {
+                  const baseAngles = {
+                    pee: 180,
+                    poo: 225,
+                    drink: 270,
+                    food: 315,
+                    chore: 0
                   };
 
-                  const radius = 110;
-                  const angleRad = (angles[type] * Math.PI) / 180;
-                  const x = radius * Math.cos(angleRad);
-                  const y = radius * Math.sin(angleRad);
-
-                  const isSelected = homeCategory === type;
+                  const targetAngle = 270;
+                  const selectedAngle = baseAngles[homeCategory];
+                  let rotation = targetAngle - selectedAngle;
 
                   return (
-                    <button
-                      key={type}
-                      onClick={() => setHomeCategory(type)}
-                      style={{
-                        position: 'absolute',
-                        left: `calc(50% + ${x}px)`,
-                        top: `calc(50% + ${y}px)`,
-                        transform: 'translate(-50%, -50%)',
-                        width: isSelected ? '64px' : '50px',
-                        height: isSelected ? '64px' : '50px',
-                        borderRadius: '50%',
-                        background: isSelected ? COLORS[type] : 'white',
-                        border: isSelected ? `4px solid white` : `2px solid ${COLORS[type]}`,
-                        boxShadow: isSelected ? `0 8px 20px ${COLORS[type]}66` : '0 4px 10px rgba(0,0,0,0.1)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: isSelected ? '28px' : '22px',
-                        transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                        zIndex: isSelected ? 30 : 20,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {ICONS[type]}
-                    </button>
+                    <div style={{
+                      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                      pointerEvents: 'none',
+                      transition: 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      transform: `rotate(${rotation}deg)`
+                    }}>
+                      {['pee', 'poo', 'drink', 'food', 'chore'].map((type) => {
+                        const angleRad = (baseAngles[type] * Math.PI) / 180;
+                        const radius = 110;
+                        const x = radius * Math.cos(angleRad);
+                        const y = radius * Math.sin(angleRad);
+                        const isSelected = homeCategory === type;
+
+                        return (
+                          <button
+                            key={type}
+                            onClick={() => setHomeCategory(type)}
+                            style={{
+                              position: 'absolute',
+                              left: `calc(50% + ${x}px)`,
+                              top: `calc(50% + ${y}px)`,
+                              transform: `translate(-50%, -50%) rotate(${-rotation}deg)`,
+                              width: isSelected ? '64px' : '50px',
+                              height: isSelected ? '64px' : '50px',
+                              borderRadius: '50%',
+                              background: isSelected ? COLORS[type] : 'white',
+                              border: isSelected ? `4px solid white` : `2px solid ${COLORS[type]}`,
+                              boxShadow: isSelected ? `0 8px 20px ${COLORS[type]}66` : '0 4px 10px rgba(0,0,0,0.1)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: isSelected ? '28px' : '22px',
+                              transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                              zIndex: isSelected ? 30 : 20,
+                              cursor: 'pointer',
+                              pointerEvents: 'auto'
+                            }}
+                          >
+                            {ICONS[type]}
+                          </button>
+                        );
+                      })}
+                    </div>
                   );
-                })}
+                })()}
               </div>
 
               {/* Dynamic Action Area */}

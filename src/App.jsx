@@ -588,16 +588,42 @@ function App() {
     }
   };
 
+  const categorizeWithGemini = async (itemId, itemName) => {
+    try {
+      const model = getGenerativeModel(ai, { model: "gemini-2.0-flash" });
+      const prompt = `Categorize this shopping item into one of these categories: produce, dairy, bakery, meat, frozen, household, other. Item: "${itemName}". Return ONLY the category key (lowercase).`;
+
+      const result = await model.generateContent(prompt);
+      const category = result.response.text().trim().toLowerCase();
+
+      if (SHOPPING_CATEGORIES[category]) {
+        await updateDoc(doc(db, 'groups', groupCode, 'shoppingList', itemId), {
+          category: category
+        });
+      }
+    } catch (error) {
+      console.error("Gemini categorization failed:", error);
+    }
+  };
+
   const handleAddManualShoppingItem = async (name) => {
     if (!groupCode || !name.trim()) return;
-    const category = categorizeItem(name);
-    await addDoc(collection(db, 'groups', groupCode, 'shoppingList'), {
-      name: name.trim(),
-      category,
-      checked: false,
-      addedBy: user.uid,
-      createdAt: new Date().toISOString()
-    });
+    const initialCategory = categorizeItem(name);
+
+    try {
+      const docRef = await addDoc(collection(db, 'groups', groupCode, 'shoppingList'), {
+        name: name.trim(),
+        category: initialCategory,
+        checked: false,
+        addedBy: user.uid,
+        createdAt: new Date().toISOString()
+      });
+
+      // Background Gemini Categorization
+      categorizeWithGemini(docRef.id, name.trim());
+    } catch (e) {
+      console.error("Error adding shopping item:", e);
+    }
   };
 
   const handleAddNote = async () => {
@@ -4097,7 +4123,7 @@ function App() {
                 <button
                   onClick={() => setShowShoppingInput(true)}
                   style={{
-                    position: 'fixed', bottom: '100px', right: '20px',
+                    position: 'fixed', bottom: '100px', left: '20px',
                     width: '56px', height: '56px', borderRadius: '50%',
                     background: '#4f46e5', color: 'white',
                     boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)',

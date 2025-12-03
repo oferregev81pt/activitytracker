@@ -2458,6 +2458,20 @@ function App() {
                 })()}
               </div>
 
+              {/* Daily Streak Display */}
+              <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  background: 'rgba(255, 152, 0, 0.1)', padding: '8px 16px', borderRadius: '20px',
+                  border: '1px solid rgba(255, 152, 0, 0.3)'
+                }}>
+                  <span style={{ fontSize: '20px' }}>🔥</span>
+                  <span style={{ fontWeight: 'bold', color: '#e65100' }}>
+                    {calculateStreak(user.uid)} Day Streak
+                  </span>
+                </div>
+              </div>
+
               {/* Dynamic Action Area */}
               <div className="card" style={{ padding: '25px', minHeight: '220px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', transition: 'all 0.3s ease' }}>
 
@@ -2607,6 +2621,31 @@ function App() {
                   </div>
                 </div>
 
+              </div>
+
+              {/* Today's Champions */}
+              <div className="card" style={{ marginTop: '20px', padding: '20px' }}>
+                <h3 style={{ margin: '0 0 15px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  🏆 Today's Champions
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {(groupData?.members || []).map(member => {
+                    const count = activities.filter(a => a.userId === member.uid && getIsraelDateString(a.timestamp) === getIsraelDateString()).length;
+                    return { ...member, count };
+                  })
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 3)
+                    .map((member, index) => (
+                      <div key={member.uid} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ fontWeight: 'bold', color: index === 0 ? '#ffd700' : index === 1 ? '#c0c0c0' : '#cd7f32', width: '20px' }}>#{index + 1}</span>
+                          {member.photoURL ? <img src={member.photoURL} style={{ width: '30px', height: '30px', borderRadius: '50%' }} /> : <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{member.name?.[0]}</div>}
+                          <span>{member.name}</span>
+                        </div>
+                        <span style={{ fontWeight: 'bold' }}>{member.count} acts</span>
+                      </div>
+                    ))}
+                </div>
               </div>
 
 

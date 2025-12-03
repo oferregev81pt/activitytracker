@@ -13,6 +13,7 @@ import ReactMarkdown from 'react-markdown';
 import './App.css'
 import { translations } from './translations';
 import { encryptData, decryptData } from './security';
+import { changelogVersions } from './changelog-data';
 
 // Utility to generate random group code
 const generateCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -3884,43 +3885,29 @@ function App() {
           {
             activeTab === 'settings_whats_new' && (
               <div className="card" style={{ padding: '20px' }}>
-                {/* Version 1.4.0 */}
-                <div style={{ marginBottom: '20px', padding: '15px', background: '#e8f5e9', borderRadius: '12px', border: '1px solid #c8e6c9' }}>
-                  <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32', fontSize: '16px', fontWeight: 'bold' }}>v1.4.0 - Dec 3, 2025</h4>
-                  <ul style={{ paddingLeft: '20px', margin: 0, fontSize: '13px', color: '#333', lineHeight: '1.6' }}>
-                    <li><strong>{t('nav_overhaul')}:</strong> {t('nav_overhaul_desc')}</li>
-                    <li><strong>{t('side_menu')}:</strong> {t('side_menu_desc')}</li>
-                    <li><strong>{t('settings_pages')}:</strong> {t('settings_pages_desc')}</li>
-                  </ul>
-                </div>
+                {changelogVersions.map((version, index) => {
+                  // Cycle through colors for each version
+                  const colors = [
+                    { bg: '#e8f5e9', border: '#c8e6c9', text: '#2e7d32' },
+                    { bg: '#e3f2fd', border: '#bbdefb', text: '#1565c0' },
+                    { bg: '#fff3e0', border: '#ffe0b2', text: '#e65100' },
+                    { bg: '#f3e5f5', border: '#e1bee7', text: '#6a1b9a' }
+                  ];
+                  const color = colors[index % colors.length];
 
-                {/* Version 1.3.0 */}
-                <div style={{ marginBottom: '20px', padding: '15px', background: '#e3f2fd', borderRadius: '12px', border: '1px solid #bbdefb' }}>
-                  <h4 style={{ margin: '0 0 10px 0', color: '#1565c0', fontSize: '16px', fontWeight: 'bold' }}>v1.3.0 - Dec 2, 2025</h4>
-                  <ul style={{ paddingLeft: '20px', margin: 0, fontSize: '13px', color: '#333', lineHeight: '1.6' }}>
-                    <li><strong>{t('data_encryption')}:</strong> {t('data_encryption_desc')}</li>
-                    <li><strong>{t('ios_improvements')}:</strong> {t('ios_improvements_desc')}</li>
-                  </ul>
-                </div>
-
-                {/* Version 1.2.1 */}
-                <div style={{ marginBottom: '20px', padding: '15px', background: '#fff3e0', borderRadius: '12px', border: '1px solid #ffe0b2' }}>
-                  <h4 style={{ margin: '0 0 10px 0', color: '#e65100', fontSize: '16px', fontWeight: 'bold' }}>v1.2.1 - Dec 2, 2025</h4>
-                  <ul style={{ paddingLeft: '20px', margin: 0, fontSize: '13px', color: '#333', lineHeight: '1.6' }}>
-                    <li><strong>{t('safari_login_fix')}:</strong> {t('safari_login_fix_desc')}</li>
-                    <li><strong>{t('reaction_names')}:</strong> {t('reaction_names_desc')}</li>
-                  </ul>
-                </div>
-
-                {/* Version 1.1.0 */}
-                <div style={{ marginBottom: '20px', padding: '15px', background: '#f3e5f5', borderRadius: '12px', border: '1px solid #e1bee7' }}>
-                  <h4 style={{ margin: '0 0 10px 0', color: '#6a1b9a', fontSize: '16px', fontWeight: 'bold' }}>v1.1.0 - Dec 2, 2025</h4>
-                  <ul style={{ paddingLeft: '20px', margin: 0, fontSize: '13px', color: '#333', lineHeight: '1.6' }}>
-                    <li><strong>{t('food_tracking_overhaul')}:</strong> {t('food_tracking_overhaul_desc')}</li>
-                    <li><strong>{t('activity_reactions')}:</strong> {t('activity_reactions_desc')}</li>
-                    <li><strong>{t('translations_support')}:</strong> {t('translations_support_desc')}</li>
-                  </ul>
-                </div>
+                  return (
+                    <div key={version.version} style={{ marginBottom: '20px', padding: '15px', background: color.bg, borderRadius: '12px', border: `1px solid ${color.border}` }}>
+                      <h4 style={{ margin: '0 0 10px 0', color: color.text, fontSize: '16px', fontWeight: 'bold' }}>
+                        v{version.version} - {new Date(version.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </h4>
+                      <ul style={{ paddingLeft: '20px', margin: 0, fontSize: '13px', color: '#333', lineHeight: '1.6' }}>
+                        {version.changes.map((change, i) => (
+                          <li key={i}>{change}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
               </div>
             )
           }

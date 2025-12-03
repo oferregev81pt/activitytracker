@@ -1,11 +1,11 @@
 {
   "name": "activitytracker",
   "private": true,
-  "version": "1.5.0",
+  "version": "1.5.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node generate-version.js && vite build",
+    "build": "node generate-version.js && node generate-changelog.js && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "deploy:staging": "npm run build && npx firebase hosting:channel:deploy staging --expires 30d",

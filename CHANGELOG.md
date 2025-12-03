@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.1] - 2025-12-03
+### Added
+- **Auto-Generated What's New**: Created build-time script that automatically generates What's New content from CHANGELOG.md
+- **Dynamic Changelog Display**: What's New section now automatically updates when CHANGELOG.md is modified
+
+### Changed
+- **Build Process**: Added `generate-changelog.js` script to build pipeline
+- **What's New UI**: Replaced hardcoded version cards with dynamic rendering from changelog data
+
 ## [1.5.0] - 2025-12-03
 ### Added
 - **Comprehensive Hebrew Translations**: Added 100+ translation keys covering all major UI elements

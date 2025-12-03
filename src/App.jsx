@@ -626,6 +626,7 @@ function App() {
   const [leaderboardRange, setLeaderboardRange] = useState('day'); // 'day', 'week', 'month', 'all'
   const [showDrinkSelection, setShowDrinkSelection] = useState(false);
   const [showFoodSelection, setShowFoodSelection] = useState(false);
+  const [homeCategory, setHomeCategory] = useState('drink');
 
   // Lock body scroll when modal is open (iOS fix)
   useEffect(() => {
@@ -2179,61 +2180,6 @@ function App() {
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-                {['pee', 'drink', 'poo', 'food'].map((type) => (
-                  <div key={type} style={{ position: 'relative' }}>
-                    <button
-                      onClick={() => {
-                        if (type === 'drink') setShowDrinkSelection(true);
-                        else if (type === 'food') setActiveTab('food');
-                        else handleTrack(type);
-                      }}
-                      style={{
-                        background: `linear-gradient(135deg, ${COLORS[type]}, ${COLORS[type]}dd)`,
-                        borderRadius: '24px',
-                        padding: '20px 10px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '10px',
-                        boxShadow: '0 10px 20px -5px rgba(0,0,0,0.15)',
-                        position: 'relative',
-                        height: '140px',
-                        width: '100%'
-                      }}
-                    >
-                      <div style={{
-                        position: 'absolute', top: '10px', right: '10px',
-                        background: 'white', borderRadius: '50%', width: 'auto', minWidth: '24px', height: '24px', padding: '0 5px',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '10px', fontWeight: 'bold', color: '#333'
-                      }}>
-                        {type === 'drink' ? `${myStats[type]}ml` : myStats[type]}
-                      </div>
-                      <span style={{ fontSize: '32px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}>{ICONS[type]}</span>
-                      <span style={{ color: 'white', fontWeight: '700', fontSize: '16px', textTransform: 'capitalize' }}>
-                        {type === 'poo' ? 'Poop' : type}
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => handleUndo(type)}
-                      style={{
-                        position: 'absolute', bottom: '-10px', right: '10px',
-                        background: 'white', borderRadius: '50%', width: '24px', height: '24px',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '10px', fontWeight: 'bold', color: '#d32f2f',
-                        border: '1px solid #eee', boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
-                      }}
-                      title={t('undo')}
-                    >
-                      ↩️
-                    </button>
-                  </div>
-                ))}
-              </div>
-
               {/* Recent Activity */}
               <div style={{ marginTop: '20px', marginBottom: '20px' }}>
                 <h3 style={{ fontSize: '18px', marginBottom: '15px' }}>{t('recent_activity')}</h3>
@@ -2384,134 +2330,219 @@ function App() {
                 </div>
               </div>
 
-              {/* Daily Progress Donut */}
-              <div className="card" style={{ padding: '15px 20px', marginBottom: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                  <div>
-                    <h3 style={{ margin: 0 }}>{translations[language].daily_goals}</h3>
-                    <p style={{ margin: 0, fontSize: '12px', color: '#888' }}>{translations[language].keep_it_up}</p>
-                  </div>
-                </div>
+              {/* Carousel / Arc Menu */}
+              <div style={{ position: 'relative', height: '320px', display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '20px', marginBottom: '10px' }}>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-                  <div style={{ width: '80px', height: '80px', position: 'relative', minWidth: 0 }}>
-                    {(() => {
-                      const targetPee = Number(goals.pee) || 10;
-                      const targetPoo = Number(goals.poo) || 1;
-                      const targetDrink = Number(goals.drink) || 1500;
-
-                      const peeProgress = Math.min(myStats.pee / targetPee, 1);
-                      const pooProgress = Math.min(myStats.poo / targetPoo, 1);
-                      const drinkProgress = Math.min(myStats.drink / targetDrink, 1);
-
-                      const totalProgress = peeProgress + pooProgress + drinkProgress;
-                      const remaining = Math.max(0, 3 - totalProgress);
-                      const percentage = Math.round((totalProgress / 3) * 100);
-
-                      const data = [
-                        { name: 'Pee', value: peeProgress },
-                        { name: 'Poo', value: pooProgress },
-                        { name: 'Drink', value: drinkProgress },
-                        { name: 'Remaining', value: remaining }
-                      ];
-
-                      return (
-                        <>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={data}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={25}
-                                outerRadius={35}
-                                startAngle={90}
-                                endAngle={-270}
-                                dataKey="value"
-                              >
-                                <Cell key="cell-pee" fill={COLORS.pee} />
-                                <Cell key="cell-poo" fill={COLORS.poo} />
-                                <Cell key="cell-drink" fill={COLORS.drink} />
-                                <Cell key="cell-rem" fill="#f0f0f0" />
-                              </Pie>
-                              <Tooltip
-                                formatter={(value, name) => [name === 'Remaining' ? '' : `${Math.round(value * 100)}%`, name]}
-                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', fontSize: '12px' }}
-                              />
-                            </PieChart>
-                          </ResponsiveContainer>
-                          <div style={{
-                            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '12px', fontWeight: 'bold', color: '#1a1a2e',
-                            pointerEvents: 'none'
-                          }}>
-                            {percentage}%
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-
-                {/* Weekly Streak Row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', padding: '10px', background: '#f8f9fa', borderRadius: '15px' }}>
+                {/* Central Progress Donut */}
+                <div style={{ width: '140px', height: '140px', position: 'relative', zIndex: 10 }}>
                   {(() => {
-                    const days = [];
-                    for (let i = 6; i >= 0; i--) {
-                      const d = new Date();
-                      d.setDate(d.getDate() - i);
-                      const dateStr = getIsraelDateString(d);
-                      const dayName = d.toLocaleDateString('en-US', { weekday: 'narrow' });
+                    const targetPee = Number(goals.pee) || 10;
+                    const targetPoo = Number(goals.poo) || 1;
+                    const targetDrink = Number(goals.drink) || 1500;
 
-                      const dayActs = activities.filter(a => getIsraelDateString(a.timestamp) === dateStr && a.userId === user.uid);
-                      const stats = {
-                        pee: dayActs.filter(a => a.type === 'pee').length,
-                        poo: dayActs.filter(a => a.type === 'poo').length,
-                        drink: dayActs.filter(a => a.type === 'drink').reduce((sum, a) => sum + a.amount, 0)
-                      };
+                    const peeProgress = Math.min(myStats.pee / targetPee, 1);
+                    const pooProgress = Math.min(myStats.poo / targetPoo, 1);
+                    const drinkProgress = Math.min(myStats.drink / targetDrink, 1);
 
-                      const targetPee = Number(goals.pee) || 10;
-                      const targetPoo = Number(goals.poo) || 1;
-                      const targetDrink = Number(goals.drink) || 1500;
+                    const totalProgress = peeProgress + pooProgress + drinkProgress;
+                    const remaining = Math.max(0, 3 - totalProgress);
+                    const percentage = Math.round((totalProgress / 3) * 100);
 
-                      const peePct = Math.min(stats.pee / targetPee, 1);
-                      const pooPct = Math.min(stats.poo / targetPoo, 1);
-                      const drinkPct = Math.min(stats.drink / targetDrink, 1);
+                    const data = [
+                      { name: 'Pee', value: peeProgress },
+                      { name: 'Poo', value: pooProgress },
+                      { name: 'Drink', value: drinkProgress },
+                      { name: 'Remaining', value: remaining }
+                    ];
 
-                      const totalPct = (peePct + pooPct + drinkPct) / 3;
-                      const isToday = i === 0;
-
-                      days.push(
-                        <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
-                          <span style={{ fontSize: '10px', fontWeight: isToday ? 'bold' : 'normal', color: isToday ? '#1a1a2e' : '#888' }}>{dayName}</span>
-                          <div style={{ position: 'relative', width: '30px', height: '30px' }}>
-                            <svg width="30" height="30" viewBox="0 0 36 36">
-                              <path
-                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                fill="none"
-                                stroke="#eee"
-                                strokeWidth="4"
-                              />
-                              <path
-                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                fill="none"
-                                stroke={totalPct >= 1 ? '#4caf50' : '#ffa726'}
-                                strokeWidth="4"
-                                strokeDasharray={`${totalPct * 100}, 100`}
-                                className="animate-fade-in"
-                              />
-                            </svg>
-                            {totalPct >= 1 && (
-                              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '12px' }}>✅</div>
-                            )}
-                          </div>
+                    return (
+                      <>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={data}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={45}
+                              outerRadius={60}
+                              startAngle={90}
+                              endAngle={-270}
+                              dataKey="value"
+                              stroke="none"
+                            >
+                              <Cell key="cell-pee" fill={COLORS.pee} />
+                              <Cell key="cell-poo" fill={COLORS.poo} />
+                              <Cell key="cell-drink" fill={COLORS.drink} />
+                              <Cell key="cell-rem" fill="#f0f0f0" />
+                            </Pie>
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div style={{
+                          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexDirection: 'column',
+                          pointerEvents: 'none'
+                        }}>
+                          <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1a1a2e' }}>{percentage}%</div>
+                          <div style={{ fontSize: '12px', color: '#888' }}>Daily Goal</div>
                         </div>
-                      );
-                    }
-                    return days;
+                      </>
+                    );
                   })()}
                 </div>
+
+                {/* Orbiting Icons */}
+                {['pee', 'poo', 'drink', 'food', 'chore'].map((type, index) => {
+                  // Arc Layout: Top-Left to Top-Right
+                  // Pee (Left), Poo (Top-Left), Drink (Top), Food (Top-Right), Chore (Right)
+                  const angles = {
+                    pee: 180,   // Left
+                    poo: 225,   // Top-Left
+                    drink: 270, // Top
+                    food: 315,  // Top-Right
+                    chore: 0    // Right
+                  };
+
+                  const radius = 110;
+                  const angleRad = (angles[type] * Math.PI) / 180;
+                  const x = radius * Math.cos(angleRad);
+                  const y = radius * Math.sin(angleRad);
+
+                  const isSelected = homeCategory === type;
+
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => setHomeCategory(type)}
+                      style={{
+                        position: 'absolute',
+                        left: `calc(50% + ${x}px)`,
+                        top: `calc(50% + ${y}px)`,
+                        transform: 'translate(-50%, -50%)',
+                        width: isSelected ? '64px' : '50px',
+                        height: isSelected ? '64px' : '50px',
+                        borderRadius: '50%',
+                        background: isSelected ? COLORS[type] : 'white',
+                        border: isSelected ? `4px solid white` : `2px solid ${COLORS[type]}`,
+                        boxShadow: isSelected ? `0 8px 20px ${COLORS[type]}66` : '0 4px 10px rgba(0,0,0,0.1)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: isSelected ? '28px' : '22px',
+                        transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        zIndex: isSelected ? 30 : 20,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {ICONS[type]}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Dynamic Action Area */}
+              <div className="card" style={{ padding: '25px', minHeight: '220px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', transition: 'all 0.3s ease' }}>
+
+                {/* Header for Action Area */}
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h3 style={{ margin: 0, textTransform: 'capitalize', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {ICONS[homeCategory]} {t(homeCategory) || homeCategory}
+                  </h3>
+                  <div style={{ fontSize: '14px', color: '#888' }}>
+                    {homeCategory === 'drink' && `${myStats.drink} / ${goals.drink || 1500} ml`}
+                    {homeCategory === 'pee' && `${myStats.pee} / ${goals.pee || 10} times`}
+                    {homeCategory === 'poo' && `${myStats.poo} / ${goals.poo || 1} times`}
+                    {homeCategory === 'food' && `${myStats.calories || 0} kcal`}
+                    {homeCategory === 'chore' && `${myStats.chore} / ${goals.chore || 1} pts`}
+                  </div>
+                </div>
+
+                {/* Content based on Category */}
+                {homeCategory === 'drink' && (
+                  <div style={{ display: 'flex', gap: '15px', width: '100%' }}>
+                    <button
+                      onClick={() => handleTrack('drink', 180)}
+                      style={{ flex: 1, padding: '20px', borderRadius: '16px', background: '#e1f5fe', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}
+                    >
+                      <span style={{ fontSize: '32px' }}>🥛</span>
+                      <span style={{ fontWeight: 'bold' }}>Cup</span>
+                      <span style={{ fontSize: '12px', color: '#666' }}>180 ml</span>
+                    </button>
+                    <button
+                      onClick={() => handleTrack('drink', bottleSize)}
+                      style={{ flex: 1, padding: '20px', borderRadius: '16px', background: '#e3f2fd', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}
+                    >
+                      <span style={{ fontSize: '32px' }}>🍾</span>
+                      <span style={{ fontWeight: 'bold' }}>Bottle</span>
+                      <span style={{ fontSize: '12px', color: '#666' }}>{bottleSize} ml</span>
+                    </button>
+                  </div>
+                )}
+
+                {(homeCategory === 'pee' || homeCategory === 'poo') && (
+                  <button
+                    onClick={() => handleTrack(homeCategory)}
+                    style={{
+                      width: '100%', padding: '20px', borderRadius: '20px',
+                      background: `linear-gradient(135deg, ${COLORS[homeCategory]}, ${COLORS[homeCategory]}dd)`,
+                      color: 'white', border: 'none', fontSize: '20px', fontWeight: 'bold',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px',
+                      boxShadow: `0 10px 20px ${COLORS[homeCategory]}44`
+                    }}
+                  >
+                    <span style={{ fontSize: '32px', background: 'rgba(255,255,255,0.2)', borderRadius: '50%', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {ICONS[homeCategory]}
+                    </span>
+                    <span>Log {t(homeCategory)}</span>
+                  </button>
+                )}
+
+                {homeCategory === 'food' && (
+                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <button
+                      onClick={() => setShowFoodSelection(true)}
+                      style={{
+                        width: '100%', padding: '15px', borderRadius: '16px',
+                        background: '#e8f5e9', color: '#2e7d32', border: '2px dashed #4caf50',
+                        fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
+                      }}
+                    >
+                      <span>📸</span> {t('add_meal')}
+                    </button>
+
+                    {/* Recent Meals Mini-List */}
+                    <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '5px' }}>
+                      {activities.filter(a => a.type === 'food' && a.userId === user.uid).slice(0, 3).map(meal => (
+                        <div key={meal.id} style={{ minWidth: '100px', padding: '10px', background: '#f5f5f5', borderRadius: '12px', fontSize: '12px' }}>
+                          <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>{meal.details?.name || meal.input || 'Meal'}</div>
+                          <div style={{ color: '#888' }}>{meal.details?.totalCalories || 0} cal</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {homeCategory === 'chore' && (
+                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      {chores.slice(0, 4).map(chore => (
+                        <button
+                          key={chore.id}
+                          onClick={() => handleTrack('chore', chore.points, { name: chore.name })}
+                          style={{
+                            padding: '15px', borderRadius: '12px', background: '#f3e5f5', border: 'none',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px'
+                          }}
+                        >
+                          <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{chore.name}</span>
+                          <span style={{ fontSize: '12px', color: '#8e24aa' }}>+{chore.points} pts</span>
+                        </button>
+                      ))}
+                    </div>
+                    <button onClick={() => setShowAllChores(true)} style={{ background: 'none', border: 'none', color: '#8e24aa', textDecoration: 'underline' }}>
+                      View All Chores
+                    </button>
+                  </div>
+                )}
+
               </div>
 
               {/* Health Summary Card */}
@@ -4235,10 +4266,7 @@ function App() {
             <span className="nav-icon">❤️</span>
             <span>{t('health')}</span>
           </div>
-          <div className={`nav-item ${activeTab === 'food' ? 'active' : ''}`} onClick={() => setActiveTab('food')}>
-            <span className="nav-icon">🍎</span>
-            <span>{t('food')}</span>
-          </div>
+
           <div className={`nav-item ${activeTab === 'chores' ? 'active' : ''}`} onClick={() => setActiveTab('chores')}>
             <span className="nav-icon">🧹</span>
             <span>{t('chores')}</span>

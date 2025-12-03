@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.2] - 2025-12-03
+### Changed
+- **Bathroom Update**: Combined Pee and Poo into a single "Bathroom" category with a new icon (🧻)
+- **Carousel Layout**: Improved carousel symmetry for better visual balance
+- **iOS Improvements**: Fixed "Add Meal" modal visibility and scrolling on iOS devices
+- **Language Settings**: Language preference is now saved and persists across app reloads
+- **Activity Logs**: Added icons to activity log entries for better readability
+
 ## [1.5.1] - 2025-12-03
 ### Added
 - **Auto-Generated What's New**: Created build-time script that automatically generates What's New content from CHANGELOG.md

@@ -1,6 +1,16 @@
 // Auto-generated from CHANGELOG.md - Do not edit manually
 export const changelogVersions = [
   {
+    "version": "1.5.1",
+    "date": "2025-12-03",
+    "changes": [
+      "Auto-Generated What's New: Created build-time script that automatically generates What's New content from CHANGELOG.md",
+      "Dynamic Changelog Display: What's New section now automatically updates when CHANGELOG.md is modified",
+      "Build Process: Added `generate-changelog.js` script to build pipeline",
+      "What's New UI: Replaced hardcoded version cards with dynamic rendering from changelog data"
+    ]
+  },
+  {
     "version": "1.5.0",
     "date": "2025-12-03",
     "changes": [
@@ -35,16 +45,6 @@ export const changelogVersions = [
       "What's New: Added a section to view recent app updates.",
       "Daily Goals Chart: Fixed percentage calculation to consistently use goal defaults.",
       "Reaction Hover: Improved reaction button UI to show names on hover/click."
-    ]
-  },
-  {
-    "version": "1.3.0",
-    "date": "2025-12-02",
-    "changes": [
-      "Data Encryption: Implemented AES encryption for all new user data (sticky notes, food logs, activities) to enhance privacy.",
-      "iOS Improvements: Fixed modal scrolling issues on iOS devices.",
-      "Streak Calculation: Corrected weekly streak logic to only count the current user's activities.",
-      "Analytics: Restored analytics functionality."
     ]
   }
 ];

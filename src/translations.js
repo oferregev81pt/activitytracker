@@ -237,6 +237,7 @@ export const translations = {
         drink: "drink",
         poo: "poo",
         chore: "chore",
+        bathroom: "bathroom",
 
         // Recent activity
         recent_drink: "RECENT DRINK",
@@ -495,6 +496,7 @@ export const translations = {
         drink: "שתייה",
         poo: "קקי",
         chore: "מטלות",
+        bathroom: "שירותים",
 
         // Recent activity
         recent_drink: "שתייה אחרונה",

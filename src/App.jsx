@@ -24,7 +24,8 @@ const ICONS = {
   poo: '💩',
   drink: '🥤',
   chore: '🧹',
-  food: '🍎'
+  food: '🍎',
+  bathroom: '🧻'
 };
 
 // Fun Chore Designs
@@ -35,7 +36,8 @@ const COLORS = {
   poo: '#e65100',
   drink: '#40c4ff',
   chore: '#8e24aa',
-  food: '#43a047'
+  food: '#43a047',
+  bathroom: '#ffb74d'
 };
 
 const BADGES = [
@@ -702,24 +704,20 @@ function App() {
   const [isAndroid, setIsAndroid] = useState(false);
 
   // Language State
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(() => {
+    return localStorage.getItem('appLanguage') || (navigator.language.startsWith('he') ? 'he' : 'en');
+  });
 
   // Helper for translations
   const t = (key) => {
     return translations[language][key] || translations['en'][key] || key;
   };
 
-  // Detect Language
+  // Update direction and persist when language changes
   useEffect(() => {
-    const userLang = navigator.language || navigator.userLanguage;
-    if (userLang.startsWith('he')) {
-      setLanguage('he');
-      document.body.dir = 'rtl';
-    } else {
-      setLanguage('en');
-      document.body.dir = 'ltr';
-    }
-  }, []);
+    localStorage.setItem('appLanguage', language);
+    document.body.dir = language === 'he' ? 'rtl' : 'ltr';
+  }, [language]);
 
   // Member Details State
   const [selectedMemberDetails, setSelectedMemberDetails] = useState(null);
@@ -1183,7 +1181,9 @@ function App() {
                             </div>
                           </span>
                         ) : (
-                          act.details?.name || act.input || (act.amount ? `${act.amount} ${act.type === 'drink' ? 'ml' : 'pts'}` : t(act.type))
+                          <span>
+                            {ICONS[act.type]} {act.details?.name || act.input || (act.amount ? `${act.amount} ${act.type === 'drink' ? 'ml' : 'pts'}` : t(act.type))}
+                          </span>
                         )}
                       </div>
                       <div style={{ fontSize: '11px', color: '#888' }}>
@@ -2526,15 +2526,14 @@ function App() {
                 {/* Orbiting Icons */}
                 {(() => {
                   const baseAngles = {
-                    pee: 180,
-                    poo: 225,
+                    bathroom: 180,
                     drink: 270,
-                    food: 315,
-                    chore: 0
+                    food: 0,
+                    chore: 90
                   };
 
                   const targetAngle = 270;
-                  const selectedAngle = baseAngles[homeCategory];
+                  const selectedAngle = baseAngles[homeCategory] || 270;
                   let rotation = targetAngle - selectedAngle;
 
                   return (
@@ -2544,7 +2543,7 @@ function App() {
                       transition: 'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
                       transform: `rotate(${rotation}deg)`
                     }}>
-                      {['pee', 'poo', 'drink', 'food', 'chore'].map((type) => {
+                      {['bathroom', 'drink', 'food', 'chore'].map((type) => {
                         const angleRad = (baseAngles[type] * Math.PI) / 180;
                         const radius = 110;
                         const x = radius * Math.cos(angleRad);
@@ -2655,8 +2654,7 @@ function App() {
                   </h3>
                   <div style={{ fontSize: '14px', color: '#888' }}>
                     {homeCategory === 'drink' && `${myStats.drink} / ${goals.drink || 1500} ml`}
-                    {homeCategory === 'pee' && `${myStats.pee} / ${goals.pee || 10} times`}
-                    {homeCategory === 'poo' && `${myStats.poo} / ${goals.poo || 1} times`}
+                    {homeCategory === 'bathroom' && `💧 ${myStats.pee} | 💩 ${myStats.poo}`}
                     {homeCategory === 'food' && `${myStats.calories || 0} kcal`}
                     {homeCategory === 'chore' && `${myStats.chore} / ${goals.chore || 10} pts`}
                   </div>
@@ -2684,22 +2682,35 @@ function App() {
                   </div>
                 )}
 
-                {(homeCategory === 'pee' || homeCategory === 'poo') && (
-                  <button
-                    onClick={() => handleTrack(homeCategory)}
-                    style={{
-                      width: '100%', padding: '20px', borderRadius: '20px',
-                      background: `linear-gradient(135deg, ${COLORS[homeCategory]}, ${COLORS[homeCategory]}dd)`,
-                      color: 'white', border: 'none', fontSize: '20px', fontWeight: 'bold',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px',
-                      boxShadow: `0 10px 20px ${COLORS[homeCategory]}44`
-                    }}
-                  >
-                    <span style={{ fontSize: '32px', background: 'rgba(255,255,255,0.2)', borderRadius: '50%', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {ICONS[homeCategory]}
-                    </span>
-                    <span>Log {t(homeCategory)}</span>
-                  </button>
+                {homeCategory === 'bathroom' && (
+                  <div style={{ display: 'flex', gap: '15px', width: '100%' }}>
+                    <button
+                      onClick={() => handleTrack('pee')}
+                      style={{
+                        flex: 1, padding: '20px', borderRadius: '20px',
+                        background: `linear-gradient(135deg, ${COLORS.pee}, ${COLORS.pee}dd)`,
+                        color: 'white', border: 'none', fontSize: '18px', fontWeight: 'bold',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
+                        boxShadow: `0 10px 20px ${COLORS.pee}44`
+                      }}
+                    >
+                      <span style={{ fontSize: '32px' }}>{ICONS.pee}</span>
+                      <span>{t('pee')}</span>
+                    </button>
+                    <button
+                      onClick={() => handleTrack('poo')}
+                      style={{
+                        flex: 1, padding: '20px', borderRadius: '20px',
+                        background: `linear-gradient(135deg, ${COLORS.poo}, ${COLORS.poo}dd)`,
+                        color: 'white', border: 'none', fontSize: '18px', fontWeight: 'bold',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px',
+                        boxShadow: `0 10px 20px ${COLORS.poo}44`
+                      }}
+                    >
+                      <span style={{ fontSize: '32px' }}>{ICONS.poo}</span>
+                      <span>{t('poo')}</span>
+                    </button>
+                  </div>
                 )}
 
                 {homeCategory === 'food' && (
@@ -2924,8 +2935,8 @@ function App() {
                   </div>
                 )}
 
-                {/* Daily Summary & Health Detective (for Pee, Poo, Drink) */}
-                {(homeCategory === 'pee' || homeCategory === 'poo' || homeCategory === 'drink') && (
+                {/* Daily Summary & Health Detective (for Bathroom, Drink) */}
+                {(homeCategory === 'bathroom' || homeCategory === 'drink') && (
                   <div style={{ width: '100%', marginTop: '20px' }}>
 
                     {/* Daily Summary */}
@@ -3010,7 +3021,10 @@ function App() {
 
                 {/* Recent History List (Common for all categories) */}
                 {/* Recent History List (Common for all categories) */}
-                {renderCategoryActivity([homeCategory], `Recent ${t(homeCategory) || homeCategory}`)}
+                {homeCategory === 'bathroom'
+                  ? renderCategoryActivity(['pee', 'poo'], `Recent ${t('bathroom')}`)
+                  : renderCategoryActivity([homeCategory], `Recent ${t(homeCategory) || homeCategory}`)
+                }
 
               </div>
 
@@ -4219,7 +4233,7 @@ function App() {
 
         {/* Floating Chat Button */}
         {
-          user && groupCode && (
+          user && groupCode && !showFoodSelection && !analyzedFoodData && (
             <>
               <button
                 onClick={() => setShowChat(!showChat)}
@@ -4461,7 +4475,7 @@ function App() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               padding: '20px', backdropFilter: 'blur(8px)'
             }} onClick={() => setShowFoodSelection(false)}>
-              <div className="card" style={{ width: '100%', maxWidth: '500px', textAlign: 'center', padding: '30px' }} onClick={e => e.stopPropagation()}>
+              <div className="card" style={{ width: '100%', maxWidth: '500px', textAlign: 'center', padding: '30px', maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
                 <h3 style={{ marginBottom: '25px', fontSize: '22px' }}>{t('what_did_you_eat')}</h3>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '25px' }}>
@@ -4528,12 +4542,12 @@ function App() {
           analyzedFoodData && (
             <div style={{
               position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-              background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000,
+              background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3001,
               backdropFilter: 'blur(5px)'
             }} onClick={() => setAnalyzedFoodData(null)}>
               <div style={{
                 background: 'white', padding: '25px', borderRadius: '20px', width: '90%', maxWidth: '350px',
-                maxHeight: '80vh', overflowY: 'auto'
+                maxHeight: 'calc(100vh - 100px)', overflowY: 'auto', paddingBottom: '50px'
               }} onClick={e => e.stopPropagation()}>
                 <h3 style={{ marginTop: 0 }}>{t('confirm_meal')}</h3>
 

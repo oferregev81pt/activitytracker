@@ -112,7 +112,150 @@ export const translations = {
         junk_minus_one: "🍭 Sweet/Junk (-1)",
         confirm_meal: "Confirm Meal 🍽️",
         analyze_diet_suggest: "✨ Analyze My Diet & Suggest Next Meal",
-        analyzing_diet: "Analyzing..."
+        analyzing_diet: "Analyzing...",
+
+        // What's New - Changelog
+        nav_overhaul: "Navigation Overhaul",
+        nav_overhaul_desc: "Streamlined bottom navigation with Trends, Home, Shopping, and Menu",
+        side_menu: "Side Menu",
+        side_menu_desc: "New slide-out menu for quick access to Family, Profile, Goals, and System settings",
+        settings_pages: "Settings Pages",
+        settings_pages_desc: "Dedicated full-screen pages for each settings category",
+        data_encryption: "Data Encryption",
+        data_encryption_desc: "AES encryption for all new user data to enhance privacy",
+        ios_improvements: "iOS Improvements",
+        ios_improvements_desc: "Fixed modal scrolling issues on iOS devices",
+        safari_login_fix: "Safari Login Fix",
+        safari_login_fix_desc: "Improved login reliability on Safari and browsers with strict privacy settings",
+        reaction_names: "Reaction Names",
+        reaction_names_desc: "See who reacted to your activities",
+        food_tracking_overhaul: "Food Tracking Overhaul",
+        food_tracking_overhaul_desc: "AI analysis, photo upload, and healthy/junk classification",
+        activity_reactions: "Activity Reactions",
+        activity_reactions_desc: "Like, Love, and Dislike reactions for food and chores",
+        translations_support: "Full Hebrew Support",
+        translations_support_desc: "Complete translation for all features",
+
+        // Settings
+        settings: "Settings",
+        menu: "Menu",
+        family_group: "Family Group",
+        my_profile: "My Profile",
+        preferences: "Preferences",
+        language: "Language",
+        weight_kg: "Weight (kg)",
+        my_bottle_size: "My Bottle Size (ml)",
+        only_parents_edit: "Only parents can edit goals.",
+
+        // Common UI
+        loading: "Loading...",
+        save: "Save",
+        edit: "Edit",
+        delete: "Delete",
+        close: "Close",
+        apply: "Apply",
+        confirm: "Confirm",
+        post_note: "Post Note",
+
+        // Health & Food
+        health_detective: "Health Detective",
+        ai_analyze_habits: "Let AI analyze your habits to find hidden patterns!",
+        daily_summary: "Daily Summary",
+        pee: "Pee",
+        drinks: "Drinks",
+        poop: "Poop",
+        daily_goal: "Daily Goal",
+        cup: "Cup",
+        bottle: "Bottle",
+        daily_targets: "Daily Targets",
+        calories: "Calories",
+        protein: "Protein",
+        ingredients: "Ingredients",
+        my_food: "My Food",
+        everyone: "Everyone",
+
+        // Leaderboard & Rankings
+        family_leaderboard: "Family Leaderboard",
+        see_how_rank: "See how you rank today",
+        todays_champions_trophy: "Today's Champions 🏆",
+        full_rankings: "Full Rankings",
+
+        // Time filters
+        today: "Today",
+        all: "All",
+
+        // Chores
+        assigned_chores: "Assigned Chores",
+        edit_chore: "Edit Chore",
+
+        // Shopping
+        shopping_list_cart: "Shopping List 🛒",
+        list_empty: "List is empty",
+
+        // Member Details
+        badges_trophy: "Badges 🏆",
+        recent_activities: "Recent Activities",
+        no_recent_activities: "No recent activities.",
+        new_badge_unlocked: "New Badge Unlocked!",
+
+        // Chat
+        family_chat: "Family Chat",
+
+        // Misc
+        default: "Default",
+
+        // Side Menu Items
+        whats_new: "What's New",
+        system: "System",
+
+        // Shop & Shopping
+        shop: "Shop",
+
+        // Fridge/Notes
+        family_fridge: "Family Fridge",
+        the_fridge_empty: "The fridge is empty! Add a note.",
+
+        // Leaderboard time filters  
+        week: "Week",
+        month: "Month",
+        day: "Day",
+
+        // Additional UI
+        thinking: "Thinking...",
+        suggest_dinner: "Suggest Dinner",
+        add_to_list: "Add to List",
+        assigned: "Assigned",
+        new_chore: "New Chore",
+        assign: "Assign",
+        you: "You",
+        todays_champions: "Today's Champions",
+
+        // Leaderboard
+        leaderboard: "leaderboard",
+
+        // Activity types (for filters)
+        drink: "drink",
+        poo: "poo",
+        chore: "chore",
+
+        // Recent activity
+        recent_drink: "RECENT DRINK",
+        me: "Me",
+
+        // Shopping List
+        add_item: "Add item...",
+
+        // Profile
+        english: "English",
+        hebrew: "Hebrew",
+
+        // System
+        refresh_app_data: "Refresh App Data",
+
+        // Chat
+        send_message: "Send Message",
+        type_message: "Type a message...",
+        to: "To"
     },
     he: {
         // Tabs
@@ -227,6 +370,149 @@ export const translations = {
         junk_minus_one: "🍭 מתוקים/ג׳אנק (-1)",
         confirm_meal: "אשר ארוחה 🍽️",
         analyze_diet_suggest: "✨ נתח תזונה והצע ארוחה הבאה",
-        analyzing_diet: "מנתח..."
+        analyzing_diet: "מנתח...",
+
+        // What's New - Changelog
+        nav_overhaul: "שדרוג ניווט",
+        nav_overhaul_desc: "ניווט תחתון מעודכן עם מגמות, בית, קניות ותפריט",
+        side_menu: "תפריט צד",
+        side_menu_desc: "תפריט נגלל חדש לגישה מהירה למשפחה, פרופיל, יעדים והגדרות מערכת",
+        settings_pages: "דפי הגדרות",
+        settings_pages_desc: "דפים ייעודיים במסך מלא לכל קטגוריית הגדרות",
+        data_encryption: "הצפנת נתונים",
+        data_encryption_desc: "הצפנת AES לכל נתוני המשתמש החדשים לשיפור הפרטיות",
+        ios_improvements: "שיפורי iOS",
+        ios_improvements_desc: "תוקנו בעיות גלילה במודאלים במכשירי iOS",
+        safari_login_fix: "תיקון התחברות Safari",
+        safari_login_fix_desc: "שיפור אמינות ההתחברות ב-Safari ודפדפנים עם הגדרות פרטיות מחמירות",
+        reaction_names: "שמות תגובות",
+        reaction_names_desc: "ראה מי הגיב לפעילויות שלך",
+        food_tracking_overhaul: "שדרוג מעקב תזונה",
+        food_tracking_overhaul_desc: "ניתוח AI, העלאת תמונות וסיווג בריא/ג'אנק",
+        activity_reactions: "תגובות לפעילויות",
+        activity_reactions_desc: "תגובות לייק, אהבה ודיסלייק לאוכל ומטלות",
+        translations_support: "תמיכה מלאה בעברית",
+        translations_support_desc: "תרגום מלא לכל התכונות",
+
+        // Settings
+        settings: "הגדרות",
+        menu: "תפריט",
+        family_group: "קבוצה משפחתית",
+        my_profile: "הפרופיל שלי",
+        preferences: "העדפות",
+        language: "שפה",
+        weight_kg: "משקל (ק״ג)",
+        my_bottle_size: "גודל הבקבוק שלי (מ״ל)",
+        only_parents_edit: "רק הורים יכולים לערוך יעדים.",
+
+        // Common UI
+        loading: "טוען...",
+        save: "שמור",
+        edit: "ערוך",
+        delete: "מחק",
+        close: "סגור",
+        apply: "החל",
+        confirm: "אשר",
+        post_note: "פרסם פתק",
+
+        // Health & Food
+        health_detective: "בלש הבריאות",
+        ai_analyze_habits: "תן ל-AI לנתח את ההרגלים שלך כדי למצוא דפוסים נסתרים!",
+        daily_summary: "סיכום יומי",
+        pee: "פיפי",
+        drinks: "שתייה",
+        poop: "קקי",
+        daily_goal: "יעד יומי",
+        cup: "כוס",
+        bottle: "בקבוק",
+        daily_targets: "יעדים יומיים",
+        calories: "קלוריות",
+        protein: "חלבון",
+        ingredients: "מרכיבים",
+        my_food: "האוכל שלי",
+        everyone: "כולם",
+
+        // Leaderboard & Rankings
+        family_leaderboard: "לוח תוצאות משפחתי",
+        see_how_rank: "ראה את הדירוג שלך היום",
+        todays_champions_trophy: "אלופי היום 🏆",
+        full_rankings: "דירוג מלא",
+
+        // Time filters
+        today: "היום",
+        all: "הכל",
+
+        // Chores
+        assigned_chores: "מטלות שהוקצו",
+        edit_chore: "ערוך מטלה",
+
+        // Shopping
+        shopping_list_cart: "רשימת קניות 🛒",
+        list_empty: "הרשימה ריקה",
+
+        // Member Details
+        badges_trophy: "תגים 🏆",
+        recent_activities: "פעילויות אחרונות",
+        no_recent_activities: "אין פעילויות אחרונות.",
+        new_badge_unlocked: "תג חדש נפתח!",
+
+        // Chat
+        family_chat: "צ'אט משפחתי",
+
+        // Misc
+        default: "ברירת מחדל",
+
+        // Side Menu Items
+        whats_new: "מה חדש",
+        system: "מערכת",
+
+        // Shop & Shopping
+        shop: "קניות",
+
+        // Fridge/Notes
+        family_fridge: "מקרר משפחתי",
+        the_fridge_empty: "המקרר ריק! הוסף פתק.",
+
+        // Leaderboard time filters
+        week: "שבוע",
+        month: "חודש",
+        day: "יום",
+
+        // Additional UI
+        thinking: "חושב...",
+        suggest_dinner: "הצע ארוחת ערב",
+        add_to_list: "הוסף לרשימה",
+        assigned: "הוקצה",
+        new_chore: "מטלה חדשה",
+        assign: "הקצה",
+        you: "אתה",
+        todays_champions: "אלופי היום",
+
+        // Leaderboard
+        leaderboard: "לוח תוצאות",
+
+        // Activity types (for filters)
+        drink: "שתייה",
+        poo: "קקי",
+        chore: "מטלות",
+
+        // Recent activity
+        recent_drink: "שתייה אחרונה",
+        me: "אני",
+
+        // Shopping List
+        add_item: "הוסף פריט...",
+
+        // Profile
+        english: "אנגלית",
+        hebrew: "עברית",
+
+        // System
+        refresh_app_data: "רענן נתוני אפליקציה",
+
+        // Chat
+        send_message: "שלח הודעה",
+        type_message: "הקלד הודעה...",
+        to: "אל"
     }
 };

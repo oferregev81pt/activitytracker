@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.5.0] - 2025-12-03
+### Added
+- **Comprehensive Hebrew Translations**: Added 100+ translation keys covering all major UI elements
+- **What's New from CHANGELOG**: Dynamic version-based sections with color-coded cards showing update history
+- **Desktop Responsiveness**: Increased max-width from 480px to 768px for better tablet/desktop experience
+
+### Changed
+- **UI Spacing Improvements**: Reduced spacing between carousel and streak, improved overall layout density
+- **Translation Coverage**: Side menu, navigation, settings, profile, chat, shopping, leaderboard all fully bilingual
+- **Header Behavior**: Dynamic header titles that change based on active settings page
+
+### Fixed
+- **Login Error**: Added missing handleGoogleLogin function
+- **Scroll Issues**: Fixed overflow and scroll behavior across all pages
+- **Header Icons**: Removed redundant refresh and settings icons from header
+
 ## [1.4.0] - 2025-12-03
 ### Changed
 - **Navigation Overhaul**: Streamlined bottom navigation with Trends, Home, Shopping, and Menu.

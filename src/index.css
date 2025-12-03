@@ -39,7 +39,8 @@ body {
 
 #root {
   width: 100%;
-  max-width: 480px;
+  max-width: 768px;
+  /* Increased from 480px for better desktop experience */
   height: 100dvh;
   /* Dynamic viewport height */
   margin: 0 auto;
@@ -162,7 +163,7 @@ p {
   left: 0;
   right: 0;
   margin: 0 auto;
-  max-width: 480px;
+  max-width: 768px;
   height: auto;
   min-height: 80px;
   padding-bottom: max(20px, env(safe-area-inset-bottom));
@@ -188,7 +189,7 @@ p {
 
 .bottom-nav-content {
   width: 100%;
-  max-width: 480px;
+  max-width: 768px;
   height: 100%;
   display: flex;
   justify-content: space-around;

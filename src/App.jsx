@@ -4900,27 +4900,34 @@ function App() {
                   </div>
                 )}
 
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-                  <button
-                    onClick={() => setAnalyzedFoodData({ ...analyzedFoodData, data: { ...analyzedFoodData.data, isHealthy: true } })}
-                    style={{
-                      flex: 1, padding: '10px', borderRadius: '10px', border: '2px solid #4caf50',
-                      background: analyzedFoodData.data.isHealthy ? '#e8f5e9' : 'white',
-                      color: analyzedFoodData.data.isHealthy ? '#2e7d32' : '#666', fontWeight: 'bold', cursor: 'pointer'
-                    }}
-                  >
-                    {t('healthy_plus_one')}
-                  </button>
-                  <button
-                    onClick={() => setAnalyzedFoodData({ ...analyzedFoodData, data: { ...analyzedFoodData.data, isHealthy: false } })}
-                    style={{
-                      flex: 1, padding: '10px', borderRadius: '10px', border: '2px solid #ef5350',
-                      background: !analyzedFoodData.data.isHealthy ? '#ffebee' : 'white',
-                      color: !analyzedFoodData.data.isHealthy ? '#c62828' : '#666', fontWeight: 'bold', cursor: 'pointer'
-                    }}
-                  >
-                    {t('junk_minus_one')}
-                  </button>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+                  {[
+                    { id: 'Healthy', label: t('category_healthy'), color: '#4caf50', bg: '#e8f5e9', isHealthy: true },
+                    { id: 'Junk', label: t('category_junk'), color: '#ef5350', bg: '#ffebee', isHealthy: false },
+                    { id: 'Sweet', label: t('category_sweet'), color: '#ab47bc', bg: '#f3e5f5', isHealthy: false }
+                  ].map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setAnalyzedFoodData({
+                        ...analyzedFoodData,
+                        data: {
+                          ...analyzedFoodData.data,
+                          category: cat.id,
+                          isHealthy: cat.isHealthy
+                        }
+                      })}
+                      style={{
+                        flex: 1, padding: '10px 5px', borderRadius: '10px',
+                        border: `2px solid ${cat.color}`,
+                        background: analyzedFoodData.data.category === cat.id ? cat.bg : 'white',
+                        color: analyzedFoodData.data.category === cat.id ? cat.color : '#666',
+                        fontWeight: 'bold', cursor: 'pointer', fontSize: '13px',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px' }}>

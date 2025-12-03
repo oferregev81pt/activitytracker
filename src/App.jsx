@@ -2103,6 +2103,7 @@ function App() {
           { id: 'settings_profile', label: t('my_profile'), icon: '👤' },
           { id: 'settings_goals', label: t('daily_goals'), icon: '🎯' },
           { id: 'settings_whats_new', label: t('whats_new'), icon: '🚀' },
+          { id: 'feedback', label: 'Feedback', icon: '📝', action: () => window.open('https://wkf.ms/4ayKPIS', '_blank') },
           { id: 'settings_system', label: t('system'), icon: '⚙️' },
           { id: 'logout', label: t('logout'), icon: '🚪', action: handleLogout, color: '#d32f2f', bg: '#ffebee' },
         ].map(item => (

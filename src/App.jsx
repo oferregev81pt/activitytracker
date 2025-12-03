@@ -159,7 +159,7 @@ function App() {
       clearInterval(interval);
     };
   }, []);
-  const [goals, setGoals] = useState({ pee: 0, drink: 0, poo: 0 });
+  const [goals, setGoals] = useState({ pee: 0, drink: 0, poo: 0, chore: 10 });
   const [bottleSize, setBottleSize] = useState(750);
   const [trendRange, setTrendRange] = useState('week'); // 'week' or 'month'
   const [selectedTrendCategory, setSelectedTrendCategory] = useState('drink'); // 'drink', 'pee', 'poo', 'chore'
@@ -3875,7 +3875,7 @@ function App() {
                 {currentUserRole === 'parent' ? (
                   <div style={{ marginBottom: '25px', padding: '15px', background: '#fff', borderRadius: '16px', border: '1px solid #eee', textAlign: 'left' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                      {['pee', 'drink', 'poo'].map(type => (
+                      {['pee', 'drink', 'poo', 'chore'].map(type => (
                         <div key={type} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${COLORS[type]}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{ICONS[type]}</div>

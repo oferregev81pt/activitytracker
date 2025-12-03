@@ -1,6 +1,17 @@
 // Auto-generated from CHANGELOG.md - Do not edit manually
 export const changelogVersions = [
   {
+    "version": "1.5.2",
+    "date": "2025-12-03",
+    "changes": [
+      "Bathroom Update: Combined Pee and Poo into a single \"Bathroom\" category with a new icon (🧻)",
+      "Carousel Layout: Improved carousel symmetry for better visual balance",
+      "iOS Improvements: Fixed \"Add Meal\" modal visibility and scrolling on iOS devices",
+      "Language Settings: Language preference is now saved and persists across app reloads",
+      "Activity Logs: Added icons to activity log entries for better readability"
+    ]
+  },
+  {
     "version": "1.5.1",
     "date": "2025-12-03",
     "changes": [
@@ -34,17 +45,6 @@ export const changelogVersions = [
       "Settings Pages: Dedicated full-screen pages for each settings category.",
       "Home Tab: Centered and emphasized in the navigation bar.",
       "Logout: Added explicit Logout option in the side menu."
-    ]
-  },
-  {
-    "version": "1.2.0",
-    "date": "2025-12-02",
-    "changes": [
-      "Settings Page: Converted settings modal to a full page integrated with Family view.",
-      "Analytics: Integrated Firebase Analytics for tracking user engagement.",
-      "What's New: Added a section to view recent app updates.",
-      "Daily Goals Chart: Fixed percentage calculation to consistently use goal defaults.",
-      "Reaction Hover: Improved reaction button UI to show names on hover/click."
     ]
   }
 ];

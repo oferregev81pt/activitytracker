@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.5.3] - 2025-12-03
+### Fixed
+- **Settings**: Added missing "Chores" goal configuration to Daily Goals settings (default: 10)
+
 ## [1.5.2] - 2025-12-03
 ### Changed
 - **Bathroom Update**: Combined Pee and Poo into a single "Bathroom" category with a new icon (🧻)

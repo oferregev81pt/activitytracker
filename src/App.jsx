@@ -2929,19 +2929,19 @@ function App() {
                           let sweet = 0;
 
                           filteredFood.forEach(a => {
+                            const category = a.details?.category;
                             const isHealthy = a.details?.isHealthy;
-                            const name = (a.details?.name || a.input || '').toLowerCase();
 
-                            if (isHealthy) {
+                            if (category === 'Sweet') {
+                              sweet++;
+                            } else if (category === 'Junk' || category === 'Processed') {
+                              junk++;
+                            } else if (category === 'Healthy') {
                               healthy++;
                             } else {
-                              // Unhealthy - check if sweet
-                              const sweets = ['cake', 'cookie', 'chocolate', 'candy', 'ice cream', 'dessert', 'sugar', 'sweet', 'donut', 'pastry', 'pie', 'tart', 'brownie', 'cupcake', 'pudding', 'soda', 'cola', 'juice', 'עוגה', 'עוגיה', 'שוקולד', 'ממתק', 'גלידה', 'קינוח', 'סוכר', 'מתוק'];
-                              if (sweets.some(s => name.includes(s))) {
-                                sweet++;
-                              } else {
-                                junk++;
-                              }
+                              // Fallback if category is missing
+                              if (isHealthy) healthy++;
+                              else junk++;
                             }
                           });
 

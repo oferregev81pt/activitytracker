@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.7.0] - 2025-12-03
+### Added
+- **Chef Mode 👨‍🍳**: AI generates shopping lists from meal ideas (e.g., "Pizza" -> Ingredients).
+- **Smart Replenish 🔄**: AI analyzes habits to suggest items you might need.
+- **Language Aware AI**: Chef Mode and Suggestions now respect your input language (Hebrew/English).
+- **Visual Enhancements**: Added emojis to all shopping categories and individual items.
+
+### Changed
+- **Categories**: Split "Produce" into separate "Vegetables 🥦" and "Fruits 🍎" categories.
+
 ## [1.6.1] - 2025-12-03
 ### Added
 - **Food Breakdown Chart**: Visual breakdown of Healthy, Junk, and Sweet foods.

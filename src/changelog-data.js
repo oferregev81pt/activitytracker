@@ -1,6 +1,17 @@
 // Auto-generated from CHANGELOG.md - Do not edit manually
 export const changelogVersions = [
   {
+    "version": "1.7.0",
+    "date": "2025-12-03",
+    "changes": [
+      "Chef Mode 👨‍🍳: AI generates shopping lists from meal ideas (e.g., \"Pizza\" -> Ingredients).",
+      "Smart Replenish 🔄: AI analyzes habits to suggest items you might need.",
+      "Language Aware AI: Chef Mode and Suggestions now respect your input language (Hebrew/English).",
+      "Visual Enhancements: Added emojis to all shopping categories and individual items.",
+      "Categories: Split \"Produce\" into separate \"Vegetables 🥦\" and \"Fruits 🍎\" categories."
+    ]
+  },
+  {
     "version": "1.6.1",
     "date": "2025-12-03",
     "changes": [
@@ -28,13 +39,6 @@ export const changelogVersions = [
     "date": "2025-12-03",
     "changes": [
       "Daily Goals: Included \"Chores\" in the daily goal progress donut chart calculation and visualization"
-    ]
-  },
-  {
-    "version": "1.5.3",
-    "date": "2025-12-03",
-    "changes": [
-      "Settings: Added missing \"Chores\" goal configuration to Daily Goals settings (default: 10)"
     ]
   }
 ];

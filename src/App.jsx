@@ -2819,6 +2819,30 @@ function App() {
                 })()}
               </div>
 
+              {/* Daily Gazette Button */}
+              <div style={{ marginBottom: '20px' }}>
+                <button
+                  onClick={() => {
+                    if (latestGazette && !canGenerateGazette()) {
+                      setShowGazetteModal(true);
+                    } else {
+                      generateGazette();
+                    }
+                  }}
+                  style={{
+                    width: '100%', padding: '15px', borderRadius: '16px',
+                    background: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
+                    border: 'none', color: '#fff', fontWeight: 'bold', fontSize: '16px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                    boxShadow: '0 4px 15px rgba(253, 160, 133, 0.4)', cursor: 'pointer'
+                  }}
+                >
+                  <span style={{ fontSize: '24px' }}>📰</span>
+                  {t('daily_gazette') || 'The Daily Gazette'}
+                  {isGeneratingGazette && <span className="animate-spin">⏳</span>}
+                </button>
+              </div>
+
               {/* Dynamic Action Area */}
               <div className="card" style={{ padding: '25px', minHeight: '220px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', transition: 'all 0.3s ease' }}>
 

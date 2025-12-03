@@ -9,6 +9,7 @@ export const translations = {
         food: "Food",
 
         // Header
+        daily_gazette: 'The Daily Gazette',
         hey: "Hey",
         track_activities: "Track your daily activities",
         install: "Install",
@@ -294,6 +295,7 @@ export const translations = {
         join: "הצטרף",
         create: "צור",
         or: "או",
+        daily_gazette: 'העיתון היומי',
 
         // Home Tab
         todays_champions: "אלופי היום",

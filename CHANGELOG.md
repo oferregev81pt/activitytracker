@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.6.0] - 2025-12-03
+### Added
+- **Carousel Home**: New circular navigation for Home screen with dynamic action area.
+- **Smart Shopping List**: "Glassmorphism" UI, sticky headers, and auto-categorization using Gemini AI.
+- **Inline Input**: Google Keep-style fixed bottom input bar for Shopping List.
+- **Feedback**: Added feedback form link to side menu.
+- **Recent History**: Added category-specific recent history to Home screen.
+
+### Changed
+- **Home Layout**: Removed summary cards to focus on the active task.
+- **Shopping UI**: Moved "Add" button to bottom-left for better mobile ergonomics.
+
 ## [1.5.4] - 2025-12-03
 ### Fixed
 - **Daily Goals**: Included "Chores" in the daily goal progress donut chart calculation and visualization
